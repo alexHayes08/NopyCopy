@@ -117,6 +117,9 @@ namespace NopyCopy
 
             try
             {
+                File.SetAttributes(e.FullPath, FileAttributes.Normal);
+                File.SetAttributes(copyTo, FileAttributes.Normal);
+
                 File.Copy(e.FullPath, copyTo, true);
             }
             catch (Exception ex)
