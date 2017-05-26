@@ -66,7 +66,7 @@ namespace NopyCopy
             watcher.Filter = "";
             watcher.Changed += NopyCopy;
             watcher.Created += NopyCopy;
-            watcher.Deleted += NopyCopy;
+           // watcher.Deleted += NopyCopy;
 
             watcher.EnableRaisingEvents = true;
         }
@@ -118,7 +118,7 @@ namespace NopyCopy
             try
             {
                 File.SetAttributes(e.FullPath, FileAttributes.Normal);
-                File.SetAttributes(copyTo, FileAttributes.Normal);
+               // File.SetAttributes(copyTo, FileAttributes.Normal);
 
                 File.Copy(e.FullPath, copyTo, true);
             }
