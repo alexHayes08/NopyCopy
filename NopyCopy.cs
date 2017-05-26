@@ -65,9 +65,9 @@ namespace NopyCopy
             watcher.IncludeSubdirectories = true;
             watcher.Filter = "";
             watcher.Changed += NopyCopy;
-            watcher.Created += NopyCopy;
-           // watcher.Deleted += NopyCopy;
-
+            watcher.Created += Created;
+           // watcher.Deleted += Deleted;
+            watcher.Renamed += NopyCopy;
             watcher.EnableRaisingEvents = true;
         }
 
@@ -92,6 +92,25 @@ namespace NopyCopy
         }
 
 
+        private static void Deleted(object sender, FileSystemEventArgs e)
+        {
+            if (!ShouldCopy(e.FullPath))
+            {
+                return;
+            }
+
+            Console.WriteLine("Delete event occurred: path:{0}, changeType: {1}", e.FullPath, e.ChangeType );
+        }
+
+        private static void Created(object sender, FileSystemEventArgs e)
+        {
+            if (!ShouldCopy(e.FullPath))
+            {
+                return;
+            }
+
+            Console.WriteLine("Create event occurred: path:{0}, changeType: {1}", e.FullPath, e.ChangeType);
+        }
 
 
         private static void NopyCopy(object sender, FileSystemEventArgs e)
