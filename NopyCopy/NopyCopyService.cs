@@ -71,7 +71,7 @@ namespace NopyCopyV2
             _solutionEventsService.Opened -= OnSolutionLoaded;
             _solutionEventsService.BeforeClosing -= OnSolutionUnloaded;
             _solutionEventsService.ProjectAdded -= OnProjectAdded;
-            _solutionEventsService.ProjectRemoved -= OnProjectedRemoved;
+            _solutionEventsService.ProjectRemoved -= OnProjectRemoved;
         }
 
         #endregion
@@ -155,40 +155,40 @@ namespace NopyCopyV2
             return VSConstants.S_OK;
         }
 
-        private void NopyCopyEventHandler(object sender, FileSystemEventArgs e)
-        {
-            if (!ShouldCopy(e.FullPath))
-            {
-                return;
-            }
+        //private void NopyCopyEventHandler(object sender, FileSystemEventArgs e)
+        //{
+        //    if (!ShouldCopy(e.FullPath))
+        //    {
+        //        return;
+        //    }
 
-            var baseStr = "[" + DateTime.Now + ": " +
-                          e.ChangeType + " " + e.FullPath + "]";
+        //    var baseStr = "[" + DateTime.Now + ": " +
+        //                  e.ChangeType + " " + e.FullPath + "]";
 
-            var item = MonitoredDirectories.FirstOrDefault(q => e.FullPath.ToLower().Contains(q.From));
+        //    var item = MonitoredDirectories.FirstOrDefault(q => e.FullPath.ToLower().Contains(q.From));
 
-            if (item == null)
-            {
-                Console.WriteLine(baseStr + ": couldn't find matching item?!");
-                return;
-            }
+        //    if (item == null)
+        //    {
+        //        Console.WriteLine(baseStr + ": couldn't find matching item?!");
+        //        return;
+        //    }
 
-            var relativePath = e.FullPath.ToLower().Replace(item.From, string.Empty);
-            var copyTo = item.To + relativePath;// Path.Combine(item.To, relativePath);
+        //    var relativePath = e.FullPath.ToLower().Replace(item.From, string.Empty);
+        //    var copyTo = item.To + relativePath;// Path.Combine(item.To, relativePath);
 
-            try
-            {
-                File.SetAttributes(e.FullPath, FileAttributes.Normal);
-                // File.SetAttributes(copyTo, FileAttributes.Normal);
+        //    try
+        //    {
+        //        File.SetAttributes(e.FullPath, FileAttributes.Normal);
+        //        // File.SetAttributes(copyTo, FileAttributes.Normal);
 
-                File.Copy(e.FullPath, copyTo, true);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            Console.WriteLine("{0} || File copied! From {1} to {2}", baseStr, item.From, item.To);
-        }
+        //        File.Copy(e.FullPath, copyTo, true);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.ToString());
+        //    }
+        //    Console.WriteLine("{0} || File copied! From {1} to {2}", baseStr, item.From, item.To);
+        //}
 
         #endregion
 
@@ -218,10 +218,10 @@ namespace NopyCopyV2
                 Filter = ""
             };
 
-            watcher.Changed += NopyCopyEventHandler;
+            //watcher.Changed += NopyCopyEventHandler;
             watcher.Created += Created;
             watcher.Deleted += Deleted;
-            watcher.Renamed += NopyCopyEventHandler;
+            //watcher.Renamed += NopyCopyEventHandler;
             watcher.EnableRaisingEvents = true;
         }
 
@@ -268,10 +268,10 @@ namespace NopyCopyV2
 
         private void RemoveAllFileWatchers()
         {
-            foreach (var fileWatcher in FileWatchers)
-            {
-                fileWatcher.Changed -= NopyCopyEventHandler;
-            }
+            //foreach (var fileWatcher in FileWatchers)
+            //{
+            //    fileWatcher.Changed -= NopyCopyEventHandler;
+            //}
         }
 
         private void AddFileWatcherToPlugin(Project project)
