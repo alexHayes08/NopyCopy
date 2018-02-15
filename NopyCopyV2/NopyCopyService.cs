@@ -70,7 +70,7 @@ namespace NopyCopyV2
 
         ~NopyCopyService()
         {
-            UnadviseDebugEvents();
+            //UnadviseDebugEvents();
             UnadviseSolutionEvents();
         }
 

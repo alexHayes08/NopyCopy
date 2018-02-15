@@ -3,21 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
-             Background="{DynamicResource {DynamicResource vsshell:VsBrushes.WindowKey}}"
-             Foreground="{DynamicResource {DynamicResource vsshell:VsBrushes.WindowTextKey}}"
+             xmlns:vsp="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:catalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
+             xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
+             xmlns:theming="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Imaging" 
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300"
-             Name="MyToolWindow">
+             d:DesignHeight="300" 
+             d:DesignWidth="300"
+             Name="MyToolWindow"
+             Foreground="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"
+             Background="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}">
     <UserControl.Resources>
         <Style TargetType="Label">
             <Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}"/>
             <Setter Property="TextBlock.FontSize" Value="{DynamicResource VsFont.EnvironmentFontSize}" />
-            <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}" />
+            <!--<Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}" />-->
+            <Setter Property="Foreground" Value="{DynamicResource VsBrush.EnvironmentForeground}"/>
         </Style>
         <Style TargetType="TabItem">
             <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
             <Setter Property="Foreground" Value="{DynamicResource VsBrush.EnvironmentForegroundGradient}"/>
+        </Style>
+        <Style TargetType="DockPanel">
+            <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
         </Style>
         <Style TargetType="Label" x:Key="ErrorMessageLabelStyle">
             <Setter Property="Foreground" Value="OrangeRed"/>
@@ -26,6 +34,25 @@
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
             </Style.Triggers>
+        </Style>
+        <Style TargetType="ListView">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <Style TargetType="{x:Type Path}">
+            <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.GlyphBrushKey}}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GridViewColumnHeader}}}" Value="True">
+                    <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.MouseOverGlyphBrushKey}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=IsPressed, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GridViewColumnHeader}}}" Value="True">
+                    <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.MouseDownGlyphBrushKey}}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="GridViewColumnHeaderGripper" TargetType="Thumb">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:HeaderColors.SeparatorLineBrushKey}}"/>
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -37,8 +64,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0">
-            <Label Content="Nopy Copy - Aperture Labs" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" DockPanel.Dock="Top"/>
-            <Label x:Name="Label_ErrorMessage" Content="{Binding Path=ErrorMessage}" DockPanel.Dock="Top" Foreground="#FFDF0000" Style="{StaticResource ErrorMessageLabelStyle}"/>
+            <Label Content="Nopy Copy - Aperture Labs" Margin="0" VerticalAlignment="Top" DockPanel.Dock="Top" HorizontalAlignment="Center"/>
+            <Label x:Name="Label_ErrorMessage" Content="{Binding Path=ErrorMessage}" DockPanel.Dock="Top" Foreground="#FFE51400" Style="{StaticResource ErrorMessageLabelStyle}"/>
         </DockPanel>
         <TabControl Margin="0" Grid.Row="1">
             <TabItem Header="Settings">
@@ -71,7 +98,7 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Log">
-                <Grid Background="#FFE5E5E5">
+                <Grid>
                     <ListView x:Name="ListView_Log" Margin="0">
                         <ListView.View>
                             <GridView>
