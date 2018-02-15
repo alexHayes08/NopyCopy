@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using Microsoft.VisualStudio.Shell;
+    using Microsoft.VisualStudio.Shell.Interop;
     using NopyCopyV2.Properties;
 
     /// <summary>
@@ -20,14 +21,20 @@
     [Guid("7d72209a-143d-4e8d-b2c0-8fab8813ec86")]
     internal class MainWindow : ToolWindowPane
     {
+        #region Fields
+
         private MainWindowControl mainWindow;
+
+        #endregion
+
+        #region Ctor(s)
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
         public MainWindow() : base(null)
         {
-            this.Caption = Resources.ApplicationTitle;
+            Caption = Resources.ApplicationTitle;
 
             // TODO: Get NopyCopyConfiguration object from VS options
             var config = new NopyCopyConfiguration
@@ -48,6 +55,8 @@
             mainWindow = new MainWindowControl();
             Content = mainWindow;
         }
+
+        #endregion
 
         #region Properties
 
@@ -83,9 +92,26 @@
             }
         }
 
+        public IVsUIShell5 ColorService
+        {
+            get
+            {
+                return mainWindow.ColorService;
+            }
+            set
+            {
+                mainWindow.ColorService = value;
+            }
+        }
+
         #endregion
 
         #region Methods
+
+        public void UpdateColors()
+        {
+            mainWindow.UpdateColors();
+        }
 
         public void SetupEvents(NopyCopyService nopyCopyService)
         {

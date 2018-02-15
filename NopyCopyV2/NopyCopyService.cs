@@ -34,13 +34,12 @@ namespace NopyCopyV2
 
         public NopyCopyService(NopyCopyConfiguration configuration,
             RunningDocumentTable runningDocumentTable,
-            DebuggerEvents debuggerEvents,
             DTE dte,
             IVsSolution solutionService)
         {
             // Init fields
             this.configuration = configuration;
-            _debuggerEvents = debuggerEvents;
+            _debuggerEvents = dte.Events.DebuggerEvents;
             _dte = dte;
             _runningDocumentTable = runningDocumentTable;
             _solutionService = solutionService as IVsSolution2;
@@ -145,17 +144,14 @@ namespace NopyCopyV2
 
         public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
         {
-            throw new NotImplementedException();
-        }
-
-        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel)
-        {
-            throw new NotImplementedException();
+            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
+            return S_OK;
         }
 
         public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
         {
-            throw new NotImplementedException();
+            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
+            return S_OK;
         }
 
         #endregion
@@ -180,6 +176,11 @@ namespace NopyCopyV2
         public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
             OnSolutionOpened();
+            return S_OK;
+        }
+
+        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel)
+        {
             return S_OK;
         }
 
@@ -310,13 +311,12 @@ namespace NopyCopyV2
             if (IsNopCommerceSolution && ShouldCopy(pathToFile))
             {
                 Console.WriteLine(pathToFile);
-                
-                // TODO
+                var copyingTo = GetFilesCorrespondingWebPluginPath(pathToFile);
 
                 OnFileSavedEvent(this, new FileSavedEvent
                 {
                     SavedFile = new FileInfo(pathToFile),
-                    CopiedTo = new FileInfo(pathToFile)
+                    CopiedTo = new FileInfo(copyingTo)
                 });
             }
         }

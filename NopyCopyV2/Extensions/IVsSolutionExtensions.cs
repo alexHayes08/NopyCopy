@@ -48,8 +48,7 @@ namespace NopyCopyV2.Extensions
             if (hierarchy == null)
                 throw new ArgumentNullException("hierarchy");
 
-            object obj;
-            hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out obj);
+            hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out object obj);
             return obj as EnvDTE.Project;
         }
 

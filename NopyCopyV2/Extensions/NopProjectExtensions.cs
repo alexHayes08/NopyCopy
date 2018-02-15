@@ -1,6 +1,8 @@
 ﻿using EnvDTE;
 using Microsoft.VisualStudio.Shell.Interop;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace NopyCopyV2.Extensions
 {
@@ -129,12 +131,23 @@ namespace NopyCopyV2.Extensions
 
         public static bool IsFilePathInPlugin(string fullFilePath, string solutionPath)
         {
-            return false;
+            return fullFilePath.Contains("Plugins");
         }
 
         public static string GetFilesCorrespondingWebPluginPath(string fullFilePath)
         {
-            return "";
+            var pathSuffix = Path.Combine("Presentation", "Nop.Web", "Plugins");
+            var fileInfo = new FileInfo(fullFilePath);
+            var splitName = fullFilePath.Split(new string[] { "Plugins" }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (splitName.Length < 2)
+            {
+                throw new Exception("File wasn't in a folder named plugins");
+            }
+
+            var pluginName = Path.Combine(splitName[0], pathSuffix, splitName[1]);
+
+            return pluginName;
         }
     }
 }

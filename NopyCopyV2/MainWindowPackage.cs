@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.Win32;
 using NopyCopyV2.Properties;
+using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2
 {
@@ -40,10 +41,7 @@ namespace NopyCopyV2
     [Guid(MainWindowPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(MainWindow))]
-    public sealed class MainWindowPackage : Package, 
-        IVsShellPropertyEvents, 
-        IVsSolutionEvents, 
-        IVsUpdateSolutionEvents2
+    public sealed class MainWindowPackage : Package, IVsShellPropertyEvents
     {
         #region Fields
 
@@ -68,16 +66,7 @@ namespace NopyCopyV2
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
         public MainWindowPackage()
-        {
-            // Inside this method you can place any initialization code that does not require
-            // any Visual Studio service because at this point the package object is created but
-            // not sited yet inside Visual Studio environment. The place to do all the other
-            // initialization is the Initialize method.
-        }
-
-        #endregion
-
-        #region Properties
+        { }
 
         #endregion
 
@@ -126,13 +115,16 @@ namespace NopyCopyV2
             {
                 // Initialize visual effect values so themes can determine if 
                 // various effects are supported by the environment
-                //object effectsAllowed;
-                //if (ErrorHandler.Succeeded(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_VisualEffectsAllowed, out effectsAllowed)))
-                //{
-                //    Debug.Assert(effectsAllowed is int, "VSSPROPID_VisualEffectsAllowed should be of type int");
-                //}
+                object effectsAllowed;
+                if (ErrorHandler.Succeeded(_vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_VisualEffectsAllowed, out effectsAllowed)))
+                {
+                    Debug.Assert(effectsAllowed is int, "VSSPROPID_VisualEffectsAllowed should be of type int");
+                }
 
-                _vsShell.AdviseShellPropertyChanges(this, out shellPropertyChangedCookie);
+                if (S_OK != _vsShell.AdviseShellPropertyChanges(this, out shellPropertyChangedCookie))
+                {
+                    // Error occurred while trying to listen to shell events
+                }
             }
 
             // Get tool window
@@ -142,8 +134,8 @@ namespace NopyCopyV2
             }
 
             // Register needed services
+            var colorService = ServiceProvider.GlobalProvider.GetService(typeof(IVsUIShell5)) as IVsUIShell5;
             var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
-            var debugEventsService = dteService.Events.DebuggerEvents;
             var runningDocumentTable = new RunningDocumentTable(this);
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
 
@@ -165,10 +157,10 @@ namespace NopyCopyV2
 
             nopyCopyService = new NopyCopyService(config,
                 runningDocumentTable,
-                debugEventsService,
                 dteService,
                 solutionService);
 
+            toolWindow.ColorService = colorService;
             toolWindow.SetupEvents(nopyCopyService);
         }
 
@@ -176,112 +168,8 @@ namespace NopyCopyV2
 
         public int OnShellPropertyChange(int propid, object var)
         {
-            toolWindow.Logs.Add("OnShellPropertyChange");
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
-        {
-            toolWindow.Logs.Add("OnAfterOpenProject");
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryCloseProject(IVsHierarchy pHierarchy, int fRemoving, ref int pfCancel)
-        {
-            toolWindow.Logs.Add("OnQueryCloseProject");
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
-        {
-            toolWindow.Logs.Add("OnBeforeCloseProject");
-            return VSConstants.S_OK;
-        }
-
-        public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
-        {
-            toolWindow.Logs.Add("OnAfterLoadProject");
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryUnloadProject(IVsHierarchy pRealHierarchy, ref int pfCancel)
-        {
-            toolWindow.Logs.Add("OnQueryUnloadProject");
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
-        {
-            toolWindow.Logs.Add("OnBeforeUnloadProject");
-            return VSConstants.S_OK;
-        }
-
-        // FIXME!
-        public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
-        {
-            toolWindow.Logs.Add("OnAfterOpenSolution");
-            return VSConstants.S_OK;
-        }
-
-        public int OnQueryCloseSolution(object pUnkReserved, ref int pfCancel)
-        {
-            toolWindow.Logs.Add("OnQueryCloseSolution");
-            return VSConstants.S_OK;
-        }
-
-        public int OnBeforeCloseSolution(object pUnkReserved)
-        {
-            toolWindow.Logs.Add("OnBeforeCloseSolution");
-            return VSConstants.S_OK;
-        }
-
-        // FIXME!
-        public int OnAfterCloseSolution(object pUnkReserved)
-        {
-            toolWindow.Logs.Add("OnAfterCloseSolution");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateSolution_Begin(ref int pfCancelUpdate)
-        {
-            toolWindow.Logs.Add("UpdateSolution_Begin");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateSolution_Done(int fSucceeded, int fModified, int fCancelCommand)
-        {
-            toolWindow.Logs.Add("UpdateSolution_Done");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateSolution_StartUpdate(ref int pfCancelUpdate)
-        {
-            toolWindow.Logs.Add("UpdateSolution_StartUpdate");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateSolution_Cancel()
-        {
-            toolWindow.Logs.Add("UpdateSolution_Cancel");
-            return VSConstants.S_OK;
-        }
-
-        public int OnActiveProjectCfgChange(IVsHierarchy pIVsHierarchy)
-        {
-            toolWindow.Logs.Add("UpdateSolution_Cancel");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateProjectCfg_Begin(IVsHierarchy pHierProj, IVsCfg pCfgProj, IVsCfg pCfgSln, uint dwAction, ref int pfCancel)
-        {
-            toolWindow.Logs.Add("UpdateProjectCfg_Begin");
-            return VSConstants.S_OK;
-        }
-
-        public int UpdateProjectCfg_Done(IVsHierarchy pHierProj, IVsCfg pCfgProj, IVsCfg pCfgSln, uint dwAction, int fSuccess, int fCancel)
-        {
-            toolWindow.Logs.Add("UpdateProjectCfg_Done");
-            return VSConstants.S_OK;
+            toolWindow.Logs.Add("OnShellPropertyChange " + propid);
+            return S_OK;
         }
 
         #endregion

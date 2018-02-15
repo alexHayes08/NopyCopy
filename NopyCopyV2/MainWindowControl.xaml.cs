@@ -1,5 +1,6 @@
 ﻿namespace NopyCopyV2
 {
+    using Microsoft.VisualStudio.Shell.Interop;
     using NopyCopyV2.Modals;
     using System;
     using System.Collections.Generic;
@@ -57,6 +58,7 @@
                 AttachEventHandlers();
             }
         }
+        public IVsUIShell5 ColorService { get; set; }
 
         #endregion
 
@@ -110,6 +112,11 @@
         }
 
         #endregion
+
+        public void UpdateColors()
+        {
+            // TODO
+        }
 
         private void AttachEventHandlers()
         {
