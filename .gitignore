@@ -2,6 +2,7 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/NopyCopy/v15
-/NopyCopy/obj/Debug
+/.vs
+/NopyCopyV2/obj
+/NopyCopyV2/obj/Debug
 /packages
