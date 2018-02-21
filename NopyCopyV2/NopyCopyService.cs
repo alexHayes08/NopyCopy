@@ -12,12 +12,17 @@ using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
-    public class NopyCopyService : IVsRunningDocTableEvents3, IVsSolutionEvents
+    public class NopyCopyService : IObservable<NopyCopyConfiguration>, IVsRunningDocTableEvents3, IVsSolutionEvents
     {
         #region Fields
 
+        private bool isSolutionLoaded;
+        private bool isNopCommerceSolution;
+        private bool isDebugging;
+        private IList<IObserver<NopyCopyConfiguration>> observers;
+
         // Services
-        private readonly NopyCopyConfiguration configuration;
+        private NopyCopyConfiguration configuration;
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
@@ -43,6 +48,10 @@ namespace NopyCopyV2
             _dte = dte;
             _runningDocumentTable = runningDocumentTable;
             _solutionService = solutionService as IVsSolution2;
+            IsDebugging = false;
+            IsSolutionLoaded = false;
+            IsNopCommerceSolution = false;
+            observers = new List<IObserver<NopyCopyConfiguration>>();
 
             // Check if a solution is currently loaded
             if (_solutionService.IsSolutionLoaded())
@@ -78,22 +87,67 @@ namespace NopyCopyV2
 
         #region Properties
 
-        public bool IsNopCommerceSolution { get; private set; }
-        private bool IsSolutionLoaded { get; set; }
-        private bool IsDebugging { get; set; }
+        public bool IsSolutionLoaded
+        {
+            get => isSolutionLoaded;
+            private set
+            {
+                isSolutionLoaded = value;
+                OnNopCommerceSolutionEvent(this, new NopCommerceSolutionEvent
+                {
+                    IsNopCommerceSolution = isNopCommerceSolution,
+                    SolutionLoaded = isSolutionLoaded
+                });
+            }
+        }
+        public bool IsDebugging
+        {
+            get => isDebugging;
+            set
+            {
+                isDebugging = value;
+                OnDebugEvent(this, new DebugEvent
+                {
+                    IsDebugging = value
+                });
+            }
+        }
+        public bool IsNopCommerceSolution
+        {
+            get => isNopCommerceSolution;
+            private set
+            {
+                OnNopCommerceSolutionEvent(this, new NopCommerceSolutionEvent
+                {
+                    IsNopCommerceSolution = value,
+                    SolutionLoaded = true
+                });
+            }
+        }
+        public NopyCopyConfiguration Configuration
+        {
+            get => configuration;
+            set
+            {
+                configuration = value;
+                OnConfigUpdatedEvent(this, 
+                    new ConfigUpdatedEvent(Configuration));
+            }
+        }
+        public string SolutionName => _dte.Solution?.FileName;
 
         #endregion
 
         #region Events
 
         public event EventHandler<DebugEvent> OnDebugEvent;
-        public event EventHandler<EnableToggledEvent> OnEnableToggledEvent;
+        public event EventHandler<ConfigUpdatedEvent> OnConfigUpdatedEvent;
         public event EventHandler<NopCommerceSolutionEvent> OnNopCommerceSolutionEvent;
         public event EventHandler<FileSavedEvent> OnFileSavedEvent;
 
         #endregion
 
-        #region Functions
+        #region Methods
 
         #region EventHandlers
 
@@ -111,8 +165,23 @@ namespace NopyCopyV2
 
         public int OnAfterSave(uint docCookie)
         {
+            // Return if not disabled or if not debugging
+            if (!configuration.IsEnabled || !IsDebugging)
+                return S_OK;
+
             var document = FindDocument(docCookie);
-            OnFileSaved(document.FullName);
+
+            if (IsNopCommerceSolution && ShouldCopy(document.FullName))
+            {
+                Console.WriteLine(document.FullName);
+                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName);
+
+                OnFileSavedEvent(this, new FileSavedEvent
+                {
+                    SavedFile = new FileInfo(document.FullName),
+                    CopiedTo = new FileInfo(copyingTo)
+                });
+            }
 
             return S_OK;
         }
@@ -175,7 +244,8 @@ namespace NopyCopyV2
 
         public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
-            OnSolutionOpened();
+            IsSolutionLoaded = true;
+            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
             return S_OK;
         }
 
@@ -196,7 +266,8 @@ namespace NopyCopyV2
 
         public int OnAfterCloseSolution(object pUnkReserved)
         {
-            OnSolutionClosed();
+            IsSolutionLoaded = false;
+            IsNopCommerceSolution = false;
             return S_OK;
         }
 
@@ -290,37 +361,6 @@ namespace NopyCopyV2
             }
         }
 
-        private void OnSolutionOpened()
-        {
-            IsSolutionLoaded = true;
-            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
-        }
-
-        private void OnSolutionClosed()
-        {
-            IsSolutionLoaded = false;
-            IsNopCommerceSolution = false;
-        }
-
-        private void OnFileSaved(string pathToFile)
-        {
-            // Return if not disabled or if not debugging
-            if (!configuration.IsEnabled || !IsDebugging)
-                return;
-
-            if (IsNopCommerceSolution && ShouldCopy(pathToFile))
-            {
-                Console.WriteLine(pathToFile);
-                var copyingTo = GetFilesCorrespondingWebPluginPath(pathToFile);
-
-                OnFileSavedEvent(this, new FileSavedEvent
-                {
-                    SavedFile = new FileInfo(pathToFile),
-                    CopiedTo = new FileInfo(copyingTo)
-                });
-            }
-        }
-
         private IEnumerable<ProjectItem> GetWhiteListedItems(Project plugin)
         {
             var whiteListedItems = new List<ProjectItem>();
@@ -362,6 +402,36 @@ namespace NopyCopyV2
                 .Documents
                 .Cast<Document>()
                 .FirstOrDefault(doc => doc.FullName == documentInfo.Moniker);
+        }
+
+        public IDisposable Subscribe(IObserver<NopyCopyConfiguration> observer)
+        {
+            if (!observers.Contains(observer))
+                observers.Add(observer);
+
+            return new Unsubscriber(observers, observer);
+        }
+
+        #endregion
+
+        #region Nested Class Unsubscriber
+
+        private class Unsubscriber : IDisposable
+        {
+            private IList<IObserver<NopyCopyConfiguration>> _observers;
+            private IObserver<NopyCopyConfiguration> _observer;
+
+            public Unsubscriber(IList<IObserver<NopyCopyConfiguration>> observers, IObserver<NopyCopyConfiguration> observer)
+            {
+                _observers = observers;
+                _observer = observer;
+            }
+
+            public void Dispose()
+            {
+                if (_observer != null && _observers.Contains(_observer))
+                    _observers.Remove(_observer);
+            }
         }
 
         #endregion

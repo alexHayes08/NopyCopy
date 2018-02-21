@@ -1,12 +1,14 @@
-﻿namespace NopyCopyV2
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Runtime.InteropServices;
-    using Microsoft.VisualStudio.Shell;
-    using Microsoft.VisualStudio.Shell.Interop;
-    using NopyCopyV2.Properties;
+﻿using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using NopyCopyV2.Properties;
+using NopyCopyV2.Xaml;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 
+namespace NopyCopyV2
+{
     /// <summary>
     /// This class implements the tool window exposed by this package and hosts a user control.
     /// </summary>
@@ -35,19 +37,6 @@
         public MainWindow() : base(null)
         {
             Caption = Resources.ApplicationTitle;
-
-            // TODO: Get NopyCopyConfiguration object from VS options
-            var config = new NopyCopyConfiguration
-            {
-                ListedFileExtensions = new List<string>()
-                {
-                    ".cshtml",
-                    ".js",
-                    ".html",
-                    ".css",
-                    ".scss"
-                }
-            };
 
             // This is the user control hosted by the tool window; Note that, even if this class implements IDisposable,
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace NopyCopyV2
+namespace NopyCopyV2.Modals
 {
-    public class NopyCopyConfiguration
+    public class NopyCopyConfiguration : INopyCopyConfiguration
     {
         #region Properties
 

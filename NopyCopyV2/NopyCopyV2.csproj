@@ -61,7 +61,10 @@
     <Compile Include="Extensions\NopProjectExtensions.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MainWindowCommand.cs" />
-    <Compile Include="MainWindowControl.xaml.cs">
+    <Compile Include="Modals\INopyCopyConfiguration.cs" />
+    <Compile Include="Modals\INopyCopyStatus.cs" />
+    <Compile Include="Modals\NopyCopyStatus.cs" />
+    <Compile Include="Xaml\MainWindowControl.xaml.cs">
       <DependentUpon>MainWindowControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindowPackage.cs" />
@@ -69,7 +72,7 @@
     <Compile Include="Modals\EnableToggledEvent.cs" />
     <Compile Include="Modals\FileSavedEvent.cs" />
     <Compile Include="Modals\NopCommerceSolutionEvent.cs" />
-    <Compile Include="NopyCopyConfiguration.cs" />
+    <Compile Include="Modals\NopyCopyConfiguration.cs" />
     <Compile Include="NopyCopyService.cs" />
     <Compile Include="PgkCmdId.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -104,7 +107,7 @@
     <Content Include="stylesheet.css" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="MainWindowControl.xaml">
+    <Page Include="Xaml\MainWindowControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

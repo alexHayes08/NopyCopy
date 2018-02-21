@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using EnvDTE;
+﻿using EnvDTE;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.Win32;
 using NopyCopyV2.Properties;
+using System;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2
@@ -50,10 +46,7 @@ namespace NopyCopyV2
         /// </summary>
         public const string PackageGuidString = "1af9e209-e5f4-4b5c-853f-6c9f46072d29";
 
-        private uint runningDocumentTableCookie;
         private uint shellPropertyChangedCookie;
-        private uint updateSolutionEventsCookie;
-
         private IVsShell _vsShell = null;
         private MainWindow toolWindow = null;
         private NopyCopyService nopyCopyService = null;
@@ -143,7 +136,7 @@ namespace NopyCopyV2
             // TODO: Get configuration from VS options
             var config = new NopyCopyConfiguration
             {
-                ListedFileExtensions = new List<string>()
+                ListedFileExtensions = new ObservableCollection<string>()
                 {
                     ".cshtml",
                     ".html",
