@@ -138,14 +138,23 @@ namespace NopyCopyV2.Extensions
         {
             var pathSuffix = Path.Combine("Presentation", "Nop.Web", "Plugins");
             var fileInfo = new FileInfo(fullFilePath);
-            var splitName = fullFilePath.Split(new string[] { "Plugins" }, StringSplitOptions.RemoveEmptyEntries);
+            var pluginRoot = ;
+            var seperators = new string[] 
+            {
+                Path.DirectorySeparatorChar + "plugins",
+                Path.DirectorySeparatorChar + "Plugins"
+            };
+            var splitName = fullFilePath.Split(seperators, StringSplitOptions.RemoveEmptyEntries);
 
             if (splitName.Length < 2)
             {
                 throw new Exception("File wasn't in a folder named plugins");
             }
 
-            var pluginName = Path.Combine(splitName[0], pathSuffix, splitName[1]);
+            var pluginName = splitName[0] + 
+                Path.DirectorySeparatorChar + 
+                pathSuffix + 
+                splitName[1];
 
             return pluginName;
         }

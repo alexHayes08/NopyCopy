@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NopyCopyV2.Modals;
 using NopyCopyV2.Properties;
 using System;
 using System.Collections.ObjectModel;

@@ -9,7 +9,8 @@
     /// <summary>
     /// Interaction logic for MainWindowControl.
     /// </summary>
-    public partial class MainWindowControl : UserControl, IObserver<NopyCopyConfiguration>
+    public partial class MainWindowControl : UserControl, 
+        IObserver<NopyCopyConfiguration>
     {
         #region Fields
 
@@ -201,7 +202,7 @@
 
         public void OnNext(NopyCopyConfiguration value)
         {
-            this.
+            this.Checkbox_Enable.IsChecked = value.IsEnabled;
         }
 
         public void OnError(Exception error)

@@ -20,6 +20,7 @@ namespace NopyCopyV2
         private bool isNopCommerceSolution;
         private bool isDebugging;
         private IList<IObserver<NopyCopyConfiguration>> observers;
+        private IDictionary<string, string> projectRootFolders;
 
         // Services
         private NopyCopyConfiguration configuration;
@@ -93,7 +94,7 @@ namespace NopyCopyV2
             private set
             {
                 isSolutionLoaded = value;
-                OnNopCommerceSolutionEvent(this, new NopCommerceSolutionEvent
+                OnNopCommerceSolutionEvent?.Invoke(this, new NopCommerceSolutionEvent
                 {
                     IsNopCommerceSolution = isNopCommerceSolution,
                     SolutionLoaded = isSolutionLoaded
@@ -106,7 +107,7 @@ namespace NopyCopyV2
             set
             {
                 isDebugging = value;
-                OnDebugEvent(this, new DebugEvent
+                OnDebugEvent?.Invoke(this, new DebugEvent
                 {
                     IsDebugging = value
                 });
@@ -117,7 +118,7 @@ namespace NopyCopyV2
             get => isNopCommerceSolution;
             private set
             {
-                OnNopCommerceSolutionEvent(this, new NopCommerceSolutionEvent
+                OnNopCommerceSolutionEvent?.Invoke(this, new NopCommerceSolutionEvent
                 {
                     IsNopCommerceSolution = value,
                     SolutionLoaded = true
@@ -130,7 +131,7 @@ namespace NopyCopyV2
             set
             {
                 configuration = value;
-                OnConfigUpdatedEvent(this, 
+                OnConfigUpdatedEvent?.Invoke(this, 
                     new ConfigUpdatedEvent(Configuration));
             }
         }
@@ -173,8 +174,8 @@ namespace NopyCopyV2
 
             if (IsNopCommerceSolution && ShouldCopy(document.FullName))
             {
-                Console.WriteLine(document.FullName);
                 var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName);
+                File.Copy(document.FullName, copyingTo, true);
 
                 OnFileSavedEvent(this, new FileSavedEvent
                 {
@@ -227,8 +228,10 @@ namespace NopyCopyV2
 
         #region IVsSolutionEvents
 
+        // TODO: On each project load/unload add to projectRootFolders dictionary
         public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
         {
+            //projectRootFolders.Add(pRealHierarchy.GetCanonicalName())
             return S_OK;
         }
 
@@ -281,7 +284,8 @@ namespace NopyCopyV2
 
             // If the solution is a NopCommerceSolution then begin listening 
             // for file changes
-            if (IsNopCommerceSolution)
+            isNopCommerceSolution = IsStandardNopProject(_solutionService);
+            if (isNopCommerceSolution)
                 AdviseRunningDocumentEvents();
         }
 
@@ -317,7 +321,11 @@ namespace NopyCopyV2
         {
             if (solutionEventsCookie.HasValue)
             {
-                _solutionService.UnadviseSolutionEvents(solutionEventsCookie.Value);
+                try
+                {
+                    _solutionService.UnadviseSolutionEvents(solutionEventsCookie.Value);
+                } catch(Exception)
+                { }
                 solutionEventsCookie = null;
             }
         }
