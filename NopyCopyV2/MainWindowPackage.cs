@@ -6,6 +6,7 @@ using NopyCopyV2.Modals;
 using NopyCopyV2.Properties;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -167,5 +168,10 @@ namespace NopyCopyV2
         }
 
         #endregion
+    }
+
+    public class OptionsPage : DialogPage
+    {
+
     }
 }

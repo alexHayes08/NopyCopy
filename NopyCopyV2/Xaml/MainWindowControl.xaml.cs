@@ -14,7 +14,15 @@
     {
         #region Fields
 
-        private const string DEFAULT_SOLUTION_NAME_PLACEHOLDER = "No solution loaded";
+        private const string DEFAULT_SOLUTION_NAME_PLACEHOLDER = 
+            "No solution loaded";
+        private const string CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE = 
+            "The current solution does not appear to be a NopCommerce " +
+            "project. Cannot enable the plugin.";
+        private const string CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE = 
+            "If checked then when debugging, modifying and saving files " +
+            "(such as views) will be copied to their corresponding ouput " +
+            "plugin directory.";
         private NopyCopyService nopyCopyService;
         private bool attachedHandlers = false;
 
@@ -30,6 +38,8 @@
             InitializeComponent();
             Logs = new List<string>();
             ListView_Log.ItemsSource = Logs;
+
+            Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
         }
 
         #endregion
@@ -124,10 +134,16 @@
             if (e.IsDebugging)
             {
                 Logs.Add("Started debugging");
+
+                // Have the message box display debug message
+                Label_DebugMessageBox.Visibility = System.Windows.Visibility.Visible;
             }
             else
             {
                 Logs.Add("Stopped debugging");
+
+                // Have the message box hide debug message
+                Label_DebugMessageBox.Visibility = System.Windows.Visibility.Collapsed;
             }
         }
 
@@ -138,11 +154,13 @@
             if (e.IsEnabled)
             {
                 Checkbox_Enable.IsEnabled = true;
+                Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE;
                 Logs.Add("Enabled plugin");
             }
             else
             {
                 Checkbox_Enable.IsEnabled = false;
+                Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
                 Logs.Add("Disabled plugin");
             }
         }
@@ -153,10 +171,12 @@
 
             if (e.SolutionLoaded)
             {
+                Checkbox_Enable.IsEnabled = true;
                 Logs.Add("NopCommerce solution loaded");
             }
             else
             {
+                Checkbox_Enable.IsEnabled = false;
                 Logs.Add("The solution was unloaded");
             }
         }

@@ -84,6 +84,7 @@
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0">
                         <DockPanel DockPanel.Dock="Top">
+                            <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Background="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" Visibility="Collapsed"/>
                             <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
                             <Label x:Name="Label_SolutionName" DockPanel.Dock="Left" Content="{Binding Path=SolutionName}"></Label>
                         </DockPanel>

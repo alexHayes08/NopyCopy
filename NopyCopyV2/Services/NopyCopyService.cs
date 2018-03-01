@@ -2,19 +2,23 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
+using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using static Microsoft.VisualStudio.VSConstants;
+using static NopyCopyV2.Extensions.IVsHierarchyExtensions;
 using static NopyCopyV2.Extensions.IVsSolutionExtensions;
 using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
-    public class NopyCopyService : IObservable<NopyCopyConfiguration>, IVsRunningDocTableEvents3, IVsSolutionEvents
+    public class NopyCopyService : SNopyCopyService, INopyCopyService
     {
         #region Fields
+
+        private const string DESCRIPTION_SYSTEM_NAME_LINE_PREFIX = "SystemName:";
 
         private bool isSolutionLoaded;
         private bool isNopCommerceSolution;
@@ -24,6 +28,7 @@ namespace NopyCopyV2
 
         // Services
         private NopyCopyConfiguration configuration;
+        private readonly Microsoft.VisualStudio.OLE.Interop.IServiceProvider _serviceProvider;
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
@@ -37,6 +42,11 @@ namespace NopyCopyV2
         #endregion
 
         #region Constructors
+
+        public NopyCopyService(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
         public NopyCopyService(NopyCopyConfiguration configuration,
             RunningDocumentTable runningDocumentTable,
@@ -53,6 +63,7 @@ namespace NopyCopyV2
             IsSolutionLoaded = false;
             IsNopCommerceSolution = false;
             observers = new List<IObserver<NopyCopyConfiguration>>();
+            projectRootFolders = new Dictionary<string, string>();
 
             // Check if a solution is currently loaded
             if (_solutionService.IsSolutionLoaded())
@@ -104,7 +115,7 @@ namespace NopyCopyV2
         public bool IsDebugging
         {
             get => isDebugging;
-            set
+            private set
             {
                 isDebugging = value;
                 OnDebugEvent?.Invoke(this, new DebugEvent
@@ -174,7 +185,7 @@ namespace NopyCopyV2
 
             if (IsNopCommerceSolution && ShouldCopy(document.FullName))
             {
-                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName);
+                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, "FIXME");
                 File.Copy(document.FullName, copyingTo, true);
 
                 OnFileSavedEvent(this, new FileSavedEvent
@@ -231,7 +242,20 @@ namespace NopyCopyV2
         // TODO: On each project load/unload add to projectRootFolders dictionary
         public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
         {
-            //projectRootFolders.Add(pRealHierarchy.GetCanonicalName())
+            try
+            {
+                var project = pStubHierarchy.ToEnvProject();
+                var systemName = pStubHierarchy.GetSystemNameFromDescription();
+
+                if (!string.IsNullOrEmpty(systemName))
+                    projectRootFolders.Add(project.Name, systemName);
+            }
+            catch(Exception e)
+            {
+                // TODO: Add some way of error handling
+                Console.WriteLine(e);
+            }
+
             return S_OK;
         }
 
@@ -242,6 +266,25 @@ namespace NopyCopyV2
 
         public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
         {
+            try
+            {
+                var project = pStubHierarchy.ToEnvProject();
+                var systemName = pStubHierarchy.GetSystemNameFromDescription();
+
+                if (!string.IsNullOrEmpty(systemName))
+                {
+                    if (projectRootFolders.ContainsKey(project.Name))
+                    {
+                        projectRootFolders.Remove(project.Name);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // TODO: Add some way of error handling
+                Console.WriteLine(e);
+            }
+
             return S_OK;
         }
 

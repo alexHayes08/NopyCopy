@@ -129,16 +129,28 @@ namespace NopyCopyV2.Extensions
             return pluginProjects;
         }
 
+        // WIP: This needs to be udpated
         public static bool IsFilePathInPlugin(string fullFilePath, string solutionPath)
         {
             return fullFilePath.Contains("Plugins");
         }
 
-        public static string GetFilesCorrespondingWebPluginPath(string fullFilePath)
+        /// <summary>
+        /// WIP: Update summary
+        /// FIXME: This function doesn't work, need to pass in the output 
+        /// projectName name as well!
+        /// Gets the output path of a file.
+        /// </summary>
+        /// <param name="fullFilePath"></param>
+        /// <param name="projectName">
+        /// This is just the name of the output project folder found in the descriptions folder.
+        /// </param>
+        /// <returns></returns>
+        public static string GetFilesCorrespondingWebPluginPath(string fullFilePath, string projectName)
         {
             var pathSuffix = Path.Combine("Presentation", "Nop.Web", "Plugins");
             var fileInfo = new FileInfo(fullFilePath);
-            var pluginRoot = ;
+            //var pluginRoot = ;
             var seperators = new string[] 
             {
                 Path.DirectorySeparatorChar + "plugins",
