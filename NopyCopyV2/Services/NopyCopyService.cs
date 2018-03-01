@@ -5,6 +5,7 @@ using NopyCopyV2.Modals;
 using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using static Microsoft.VisualStudio.VSConstants;
@@ -28,7 +29,7 @@ namespace NopyCopyV2
 
         // Services
         private NopyCopyConfiguration configuration;
-        private readonly Microsoft.VisualStudio.OLE.Interop.IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
@@ -43,22 +44,17 @@ namespace NopyCopyV2
 
         #region Constructors
 
-        public NopyCopyService(Microsoft.VisualStudio.OLE.Interop.IServiceProvider serviceProvider)
+        public NopyCopyService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-        }
 
-        public NopyCopyService(NopyCopyConfiguration configuration,
-            RunningDocumentTable runningDocumentTable,
-            DTE dte,
-            IVsSolution solutionService)
-        {
-            // Init fields
-            this.configuration = configuration;
-            _debuggerEvents = dte.Events.DebuggerEvents;
-            _dte = dte;
+            var dteService = _serviceProvider.GetService(typeof(DTE)) as DTE;
+            var runningDocumentTable = new RunningDocumentTable(serviceProvider);
+            var solutionService = _serviceProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
+            _debuggerEvents = dteService.Events.DebuggerEvents;
+            _dte = dteService;
             _runningDocumentTable = runningDocumentTable;
-            _solutionService = solutionService as IVsSolution2;
+            _solutionService = solutionService;
             IsDebugging = false;
             IsSolutionLoaded = false;
             IsNopCommerceSolution = false;
@@ -83,6 +79,22 @@ namespace NopyCopyV2
 
             // Listen for when solution events occur
             AdviseSolutionEvents();
+
+            // Init nopyCopyService
+            // TODO: Get configuration from VS options
+            Configuration = new NopyCopyConfiguration
+            {
+                ListedFileExtensions = new ObservableCollection<string>()
+                {
+                    ".cshtml",
+                    ".html",
+                    ".js",
+                    ".css",
+                    ".scss"
+                },
+                IsWhiteList = true,
+                IsEnabled = true
+            };
         }
 
         #endregion
@@ -185,7 +197,8 @@ namespace NopyCopyV2
 
             if (IsNopCommerceSolution && ShouldCopy(document.FullName))
             {
-                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, "FIXME");
+                var pluginName = document.ProjectItem.ContainingProject.Name;
+                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, pluginName);
                 File.Copy(document.FullName, copyingTo, true);
 
                 OnFileSavedEvent(this, new FileSavedEvent

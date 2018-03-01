@@ -39,6 +39,10 @@ namespace NopyCopyV2.Extensions
                 (int)__VSHPROPID.VSHPROPID_ExtObject,
                 out object objProp);
 
+            hierarchy.GetProperty(VSITEMID_ROOT, 
+                (int)__VSHPROPID.VSHPROPID_ExtObject,
+                out object objProp2);
+
             if (objProp is EnvDTE.Project)
             {
                 project = objProp as EnvDTE.Project;

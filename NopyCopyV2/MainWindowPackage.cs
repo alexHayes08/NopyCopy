@@ -4,9 +4,10 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
 using NopyCopyV2.Properties;
+using NopyCopyV2.Services;
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -31,6 +32,7 @@ namespace NopyCopyV2
     /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
     /// </para>
     /// </remarks>
+    [ProvideService(typeof(SNopyCopyService))]
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -39,6 +41,8 @@ namespace NopyCopyV2
     [Guid(MainWindowPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(MainWindow))]
+    [ProvideOptionPage(typeof(OptionsPage), 
+        OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
     public sealed class MainWindowPackage : Package, IVsShellPropertyEvents
     {
         #region Fields
@@ -93,6 +97,13 @@ namespace NopyCopyV2
 
         #region Package Members
 
+        private object CreateService(IServiceContainer container, Type serviceType)
+        {
+            if (typeof(SNopyCopyService) == serviceType)
+                return new NopyCopyService(this);
+            return null;
+        }
+
         /// <summary>
         /// Initialization of the package; this method is called right after 
         /// the package is sited, so this is the place where you can put all 
@@ -101,6 +112,11 @@ namespace NopyCopyV2
         /// </summary>
         protected override void Initialize()
         {
+            ServiceCreatorCallback callback = new ServiceCreatorCallback(CreateService);
+            ((IServiceContainer)this).AddService(typeof(SNopyCopyService), callback);
+
+            nopyCopyService = GetService(typeof(SNopyCopyService)) as NopyCopyService;
+
             base.Initialize();
             MainWindowCommand.Initialize(this);
 
@@ -134,27 +150,6 @@ namespace NopyCopyV2
             var runningDocumentTable = new RunningDocumentTable(this);
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
 
-            // Init nopyCopyService
-            // TODO: Get configuration from VS options
-            var config = new NopyCopyConfiguration
-            {
-                ListedFileExtensions = new ObservableCollection<string>()
-                {
-                    ".cshtml",
-                    ".html",
-                    ".js",
-                    ".css",
-                    ".scss"
-                },
-                IsWhiteList = true,
-                IsEnabled = true
-            };
-
-            nopyCopyService = new NopyCopyService(config,
-                runningDocumentTable,
-                dteService,
-                solutionService);
-
             toolWindow.ColorService = colorService;
             toolWindow.SetupEvents(nopyCopyService);
         }
@@ -168,10 +163,5 @@ namespace NopyCopyV2
         }
 
         #endregion
-    }
-
-    public class OptionsPage : DialogPage
-    {
-
     }
 }

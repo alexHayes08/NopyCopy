@@ -65,6 +65,9 @@
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
+    <Compile Include="OptionsPage.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Services\INopyCopyService.cs" />
     <Compile Include="Services\SNopyCopyService.cs" />
     <Compile Include="Xaml\MainWindowControl.xaml.cs">
