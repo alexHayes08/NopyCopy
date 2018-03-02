@@ -15,6 +15,15 @@ namespace NopyCopyV2
 
         #endregion
 
+        #region Ctor(s)
+
+        public OptionsPage()
+        {
+            ListedFileExtensions = new List<string>();
+        }
+
+        #endregion
+
         #region Properties
 
         [Category(CATEGORY_NAME)]

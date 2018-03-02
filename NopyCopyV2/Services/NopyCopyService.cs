@@ -305,6 +305,16 @@ namespace NopyCopyV2
         {
             IsSolutionLoaded = true;
             IsNopCommerceSolution = IsStandardNopProject(_solutionService);
+
+            var projects = _solutionService.GetProjects();
+            foreach (var project in projects)
+            {
+                foreach (ProjectItem item in project.ProjectItems)
+                {
+                    
+                }
+            }
+
             return S_OK;
         }
 
