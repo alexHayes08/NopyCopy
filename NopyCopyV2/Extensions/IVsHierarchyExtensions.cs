@@ -31,6 +31,22 @@ namespace NopyCopyV2.Extensions
             return systemName;
         }
 
+        public static string GetProjectDirectory(this IVsHierarchy hierarchy)
+        {
+            string fullPath = null;
+
+            hierarchy.GetProperty((uint)VSITEMID.Root,
+                (int)__VSHPROPID.VSHPROPID_ProjectDir,
+                out object objProp);
+
+            if (objProp is string)
+            {
+                fullPath = objProp as string;
+            }
+
+            return fullPath;
+        }
+
         public static EnvDTE.Project ToEnvProject(this IVsHierarchy hierarchy)
         {
             EnvDTE.Project project = null;
@@ -38,10 +54,6 @@ namespace NopyCopyV2.Extensions
             hierarchy.GetProperty(VSITEMID_ROOT,
                 (int)__VSHPROPID.VSHPROPID_ExtObject,
                 out object objProp);
-
-            hierarchy.GetProperty(VSITEMID_ROOT, 
-                (int)__VSHPROPID.VSHPROPID_ExtObject,
-                out object objProp2);
 
             if (objProp is EnvDTE.Project)
             {

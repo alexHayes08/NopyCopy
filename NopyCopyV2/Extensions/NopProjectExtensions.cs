@@ -3,13 +3,16 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace NopyCopyV2.Extensions
 {
     internal static class NopProjectExtensions
     {
-        const string PluginProjectsPrefix = @"Plugins\";
-        const string PluginsProjectType = "2150E333-8FDC-42A3-9474-1A3956D46DE8";
+        const string DESCRIPTION_NAME = "Description.txt";
+        const string PLUGIN_PROJECT_PREFIX = @"Plugins\";
+        const string PLUGIN_PROJECT_TYPE = "2150E333-8FDC-42A3-9474-1A3956D46DE8";
+        const string SYSTEM_NAME_PREFIX = "SystemName: ";
 
         /// <summary>
         /// Checks to see if the solution projects includes the standard 
@@ -120,13 +123,106 @@ namespace NopyCopyV2.Extensions
 
             foreach (Project project in solution.GetProjects())
             {
-                if (project.FullName.StartsWith(PluginProjectsPrefix))
+                if (project.FullName.StartsWith(PLUGIN_PROJECT_PREFIX))
                 {
                     pluginProjects.Add(project);
                 }
             }
 
             return pluginProjects;
+        }
+
+        /// <summary>
+        /// The project item must be a Project!
+        /// </summary>
+        /// <param name="projectItem"></param>
+        /// <param name="systemName"></param>
+        /// <returns></returns>
+        public static bool TryGetSystemNameOfProjectItem(
+            this ProjectItem projectItem, 
+            out string systemName)
+        {
+            systemName = null;
+
+            //var currentProjectRoot = projectItem.Docum
+
+            // Return if there are no ProjectItems
+            if (projectItem.ProjectItems == null)
+                return false;
+
+            ProjectItem descFile = null;
+
+            for (var i = 0; i < projectItem.ProjectItems.Count; i++)
+            {
+                var currentItem = projectItem.ProjectItems.Item(i);
+                if (currentItem is ProjectItem)
+                {
+                    var projItem = currentItem as ProjectItem;
+                    if (projItem.Name.ToLower() == DESCRIPTION_NAME)
+                    {
+                        descFile = projItem;
+                        break;
+                    }
+                }
+            }
+
+            if (descFile != null)
+            {
+                // Check if path for the file is valid
+                var path = projectItem.Document.FullName;
+                if (File.Exists(path))
+                {
+                    var lines = File.ReadAllLines(path);
+                    systemName = lines
+                        .FirstOrDefault(line => line.StartsWith(SYSTEM_NAME_PREFIX));
+
+                    if (!string.IsNullOrEmpty(systemName))
+                    {
+                        systemName = systemName
+                            .Replace(SYSTEM_NAME_PREFIX, "")
+                            .Trim();
+                    }
+                }
+            }
+
+            return !string.IsNullOrEmpty(systemName);
+        }
+
+        /// <summary>
+        /// Warning: If the plugin has an invalid Description.txt then
+        /// systemName will be set to null.
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="systemName"></param>
+        /// <returns></returns>
+        public static bool TryGetSystemNameOfProject(this Project project, out string systemName)
+        {
+            systemName = null;
+
+            foreach (ProjectItem item in project.ProjectItems)
+            {
+                if (item.Name == DESCRIPTION_NAME)
+                {
+                    // Check if path for the file is valid
+                    var path = item.Document.FullName;
+                    if (File.Exists(path))
+                    {
+                        var lines = File.ReadAllLines(path);
+                        systemName = lines
+                            .FirstOrDefault(l => l.StartsWith(SYSTEM_NAME_PREFIX));
+
+                        // Check that systemName was found
+                        if (!string.IsNullOrEmpty(systemName))
+                        {
+                            systemName = systemName
+                                .Replace(SYSTEM_NAME_PREFIX, "")
+                                .Trim();
+                        }
+                    }
+                }
+            }
+
+            return !string.IsNullOrEmpty(systemName);
         }
 
         // WIP: This needs to be udpated

@@ -12,8 +12,9 @@ namespace NopyCopyV2.Services
     /// describes the service and one that describes the service interface?
     /// </remarks>
     /// <see cref="https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-a-service"/>
-    public interface INopyCopyService : IObservable<NopyCopyConfiguration>,
-        IVsRunningDocTableEvents3, IVsSolutionEvents
+    public interface INopyCopyService : 
+        IVsRunningDocTableEvents3, 
+        IVsSolutionEvents
     {
         bool IsSolutionLoaded { get; }
         bool IsDebugging { get; }

@@ -4,13 +4,13 @@
     using NopyCopyV2.Modals;
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Windows.Controls;
 
     /// <summary>
     /// Interaction logic for MainWindowControl.
     /// </summary>
-    public partial class MainWindowControl : UserControl, 
-        IObserver<NopyCopyConfiguration>
+    public partial class MainWindowControl : UserControl
     {
         #region Fields
 
@@ -147,21 +147,31 @@
             }
         }
 
-        private void EnableToggleEventHandler(object sender, ConfigUpdatedEvent e)
+        private void EnableToggleEventHandler(object sender, PropertyChangedEventArgs e)
         {
-            Checkbox_Enable.IsChecked = e.IsEnabled;
+            switch (e.PropertyName)
+            {
+                case nameof(nopyCopyService.Configuration.IsEnabled):
+                    Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
 
-            if (e.IsEnabled)
-            {
-                Checkbox_Enable.IsEnabled = true;
-                Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE;
-                Logs.Add("Enabled plugin");
-            }
-            else
-            {
-                Checkbox_Enable.IsEnabled = false;
-                Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
-                Logs.Add("Disabled plugin");
+                    if (Checkbox_Enable.IsChecked ?? false)
+                    {
+                        Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE;
+                        Logs.Add("Enabled plugin");
+                    }
+                    else
+                    {
+                        Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
+                        Logs.Add("Disabled plugin");
+                    }
+
+                    break;
+                case nameof(nopyCopyService.Configuration.IsWhiteList):
+                    // TODO
+                    break;
+                case nameof(nopyCopyService.Configuration.ListedFileExtensions):
+                    // TODO
+                    break;
             }
         }
 
@@ -200,7 +210,7 @@
                 return;
 
             nopyCopyService.OnDebugEvent += DebugEventHandler;
-            nopyCopyService.OnConfigUpdatedEvent += EnableToggleEventHandler;
+            nopyCopyService.Configuration.PropertyChanged += EnableToggleEventHandler;
             nopyCopyService.OnNopCommerceSolutionEvent += NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent += FileSavedEventHandler;
 
@@ -213,7 +223,7 @@
                 return;
 
             nopyCopyService.OnDebugEvent -= DebugEventHandler;
-            nopyCopyService.OnConfigUpdatedEvent -= EnableToggleEventHandler;
+            nopyCopyService.Configuration.PropertyChanged -= EnableToggleEventHandler;
             nopyCopyService.OnNopCommerceSolutionEvent -= NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent -= FileSavedEventHandler;
 

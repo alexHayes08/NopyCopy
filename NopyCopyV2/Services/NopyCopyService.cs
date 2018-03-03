@@ -25,10 +25,14 @@ namespace NopyCopyV2
         private bool isNopCommerceSolution;
         private bool isDebugging;
         private IList<IObserver<NopyCopyConfiguration>> observers;
+
+        /// <summary>
+        /// The key is the project name, and the value is the plugins system 
+        /// name.
+        /// </summary>
         private IDictionary<string, string> projectRootFolders;
 
         // Services
-        private NopyCopyConfiguration configuration;
         private readonly IServiceProvider _serviceProvider;
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly DebuggerEvents _debuggerEvents;
@@ -95,6 +99,8 @@ namespace NopyCopyV2
                 IsWhiteList = true,
                 IsEnabled = true
             };
+
+            AdviseRunningDocumentEvents();
         }
 
         #endregion
@@ -148,16 +154,9 @@ namespace NopyCopyV2
                 });
             }
         }
-        public NopyCopyConfiguration Configuration
-        {
-            get => configuration;
-            set
-            {
-                configuration = value;
-                OnConfigUpdatedEvent?.Invoke(this, 
-                    new ConfigUpdatedEvent(Configuration));
-            }
-        }
+
+        public NopyCopyConfiguration Configuration { get; set; }
+        public IObservable<string> SolutionNameV2 { get; set; }
         public string SolutionName => _dte.Solution?.FileName;
 
         #endregion
@@ -165,7 +164,6 @@ namespace NopyCopyV2
         #region Events
 
         public event EventHandler<DebugEvent> OnDebugEvent;
-        public event EventHandler<ConfigUpdatedEvent> OnConfigUpdatedEvent;
         public event EventHandler<NopCommerceSolutionEvent> OnNopCommerceSolutionEvent;
         public event EventHandler<FileSavedEvent> OnFileSavedEvent;
 
@@ -189,11 +187,15 @@ namespace NopyCopyV2
 
         public int OnAfterSave(uint docCookie)
         {
+            var document = FindDocument(docCookie);
+            var project = document.ProjectItem;
+            var fullPath = document.FullName;
             // Return if not disabled or if not debugging
-            if (!configuration.IsEnabled || !IsDebugging)
+            if (!Configuration.IsEnabled || !IsDebugging)
                 return S_OK;
 
-            var document = FindDocument(docCookie);
+            //var document = FindDocument(docCookie);
+            //var project = document.ProjectItem;
 
             if (IsNopCommerceSolution && ShouldCopy(document.FullName))
             {
@@ -260,8 +262,11 @@ namespace NopyCopyV2
                 var project = pStubHierarchy.ToEnvProject();
                 var systemName = pStubHierarchy.GetSystemNameFromDescription();
 
-                if (!string.IsNullOrEmpty(systemName))
+                if (!string.IsNullOrEmpty(systemName) 
+                    && !projectRootFolders.ContainsKey(project.Name))
+                {
                     projectRootFolders.Add(project.Name, systemName);
+                }
             }
             catch(Exception e)
             {
@@ -309,9 +314,24 @@ namespace NopyCopyV2
             var projects = _solutionService.GetProjects();
             foreach (var project in projects)
             {
-                foreach (ProjectItem item in project.ProjectItems)
+                // Get the Plugins folder
+                if (project.Name.ToLower() == "plugins")
                 {
-                    
+                    var fullName = project.FullName;
+
+                    // Get all projects in this folder
+                    foreach (ProjectItem pluginProject in project.ProjectItems)
+                    {
+                        // Check if the project is a plugin
+                        if (pluginProject.TryGetSystemNameOfProjectItem(
+                            out string systemName))
+                        {
+                            if (!projectRootFolders.ContainsKey(project.Name))
+                            {
+                                projectRootFolders.Add(project.Name, systemName);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -337,6 +357,10 @@ namespace NopyCopyV2
         {
             IsSolutionLoaded = false;
             IsNopCommerceSolution = false;
+
+            foreach (var key in projectRootFolders.Keys)
+                projectRootFolders.Remove(key);
+
             return S_OK;
         }
 
@@ -441,7 +465,7 @@ namespace NopyCopyV2
 
             foreach (ProjectItem item in plugin.ProjectItems)
             {
-                if (configuration.ListedFileExtensions.Contains(
+                if (Configuration.ListedFileExtensions.Contains(
                     Path.GetExtension(item.Name)))
                 {
                     whiteListedItems.Add(item);
@@ -460,9 +484,9 @@ namespace NopyCopyV2
                 return false;
             }
 
-            var containsExtension = configuration.ListedFileExtensions.Contains(ext);
+            var containsExtension = Configuration.ListedFileExtensions.Contains(ext);
 
-            if (configuration.IsWhiteList)
+            if (Configuration.IsWhiteList)
                 return containsExtension;
             else
                 return !containsExtension;
@@ -476,36 +500,6 @@ namespace NopyCopyV2
                 .Documents
                 .Cast<Document>()
                 .FirstOrDefault(doc => doc.FullName == documentInfo.Moniker);
-        }
-
-        public IDisposable Subscribe(IObserver<NopyCopyConfiguration> observer)
-        {
-            if (!observers.Contains(observer))
-                observers.Add(observer);
-
-            return new Unsubscriber(observers, observer);
-        }
-
-        #endregion
-
-        #region Nested Class Unsubscriber
-
-        private class Unsubscriber : IDisposable
-        {
-            private IList<IObserver<NopyCopyConfiguration>> _observers;
-            private IObserver<NopyCopyConfiguration> _observer;
-
-            public Unsubscriber(IList<IObserver<NopyCopyConfiguration>> observers, IObserver<NopyCopyConfiguration> observer)
-            {
-                _observers = observers;
-                _observer = observer;
-            }
-
-            public void Dispose()
-            {
-                if (_observer != null && _observers.Contains(_observer))
-                    _observers.Remove(_observer);
-            }
         }
 
         #endregion

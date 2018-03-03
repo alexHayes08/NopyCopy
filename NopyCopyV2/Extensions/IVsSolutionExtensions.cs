@@ -14,7 +14,9 @@ namespace NopyCopyV2.Extensions
             {
                 EnvDTE.Project project = hier.GetDTEProject();
                 if (project != null)
+                {
                     yield return project;
+                }
             }
         }
 
@@ -48,7 +50,7 @@ namespace NopyCopyV2.Extensions
             if (hierarchy == null)
                 throw new ArgumentNullException("hierarchy");
 
-            hierarchy.GetProperty(VSConstants.VSITEMID_ROOT, (int)__VSHPROPID.VSHPROPID_ExtObject, out object obj);
+            hierarchy.GetProperty((uint)VSConstants.VSITEMID.Root, (int)__VSHPROPID.VSHPROPID_ExtObject, out object obj);
             return obj as EnvDTE.Project;
         }
 
