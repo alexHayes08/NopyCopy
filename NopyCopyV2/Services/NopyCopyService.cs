@@ -314,25 +314,38 @@ namespace NopyCopyV2
             var projects = _solutionService.GetProjects();
             foreach (var project in projects)
             {
-                // Get the Plugins folder
-                if (project.Name.ToLower() == "plugins")
+                foreach (ProjectItem pluginProject in project.ProjectItems)
                 {
-                    var fullName = project.FullName;
-
-                    // Get all projects in this folder
-                    foreach (ProjectItem pluginProject in project.ProjectItems)
+                    // Check if the project is a plugin
+                    if (pluginProject.TryGetSystemNameOfProjectItem(
+                        out string systemName))
                     {
-                        // Check if the project is a plugin
-                        if (pluginProject.TryGetSystemNameOfProjectItem(
-                            out string systemName))
+                        if (!projectRootFolders.ContainsKey(project.Name))
                         {
-                            if (!projectRootFolders.ContainsKey(project.Name))
-                            {
-                                projectRootFolders.Add(project.Name, systemName);
-                            }
+                            projectRootFolders.Add(project.Name, systemName);
                         }
                     }
                 }
+
+                //// Get the Plugins folder
+                //if (project.Name.ToLower() == "plugins")
+                //{
+                //    var fullName = project.FullName;
+
+                //    // Get all projects in this folder
+                //    foreach (ProjectItem pluginProject in project.ProjectItems)
+                //    {
+                //        // Check if the project is a plugin
+                //        if (pluginProject.TryGetSystemNameOfProjectItem(
+                //            out string systemName))
+                //        {
+                //            if (!projectRootFolders.ContainsKey(project.Name))
+                //            {
+                //                projectRootFolders.Add(project.Name, systemName);
+                //            }
+                //        }
+                //    }
+                //}
             }
 
             return S_OK;

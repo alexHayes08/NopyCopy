@@ -145,6 +145,20 @@ namespace NopyCopyV2.Extensions
             systemName = null;
 
             //var currentProjectRoot = projectItem.Docum
+            var dte = projectItem.DTE;
+            var activeProjects = dte.ActiveSolutionProjects as Project[];
+
+            foreach (var item in projectItem.ProjectItems)
+            {
+                if (item is ProjectItem)
+                {
+                    var pi_2 = item as ProjectItem;
+                }
+                else if (item is Document)
+                {
+                    var d = item as Document;
+                }
+            }
 
             // Return if there are no ProjectItems
             if (projectItem.ProjectItems == null)
