@@ -70,6 +70,7 @@
     </Compile>
     <Compile Include="Services\INopyCopyService.cs" />
     <Compile Include="Services\SNopyCopyService.cs" />
+    <Compile Include="Services\VSDKHelpers.cs" />
     <Compile Include="Xaml\MainWindowControl.xaml.cs">
       <DependentUpon>MainWindowControl.xaml</DependentUpon>
     </Compile>

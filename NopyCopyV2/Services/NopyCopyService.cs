@@ -15,7 +15,7 @@ using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
-    public class NopyCopyService : SNopyCopyService, INopyCopyService
+    public class NopyCopyService : Package, SNopyCopyService, INopyCopyService
     {
         #region Fields
 

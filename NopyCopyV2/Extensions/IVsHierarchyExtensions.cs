@@ -76,7 +76,7 @@ namespace NopyCopyV2.Extensions
         public static IList<string> GetNodeFiles(this IVsHierarchy hier, uint itemId)
         {
             IVsSccProject2 pscp2 = hier as IVsSccProject2;
-            return GetNodeFiles(pscp2, itemId);
+            return pscp2.GetNodeFiles(itemId);
         }
     }
 
@@ -180,6 +180,22 @@ namespace NopyCopyV2.Extensions
 
             // Attempt to get the filename controlled by the root node
             IList<string> sccFiles = GetNodeFiles(pscp2Project, VSITEMID_ROOT);
+            if (sccFiles.Count > 0 && sccFiles[0] != null && sccFiles[0].Length > 0)
+            {
+                return sccFiles[0];
+            }
+
+            // If that failed, attempt to get a name from the IVsProject interface
+            string bstrMKDocument;
+            if (project.GetMkDocument(VSITEMID_ROOT, out bstrMKDocument) == S_OK
+                && bstrMKDocument != null 
+                && bstrMKDocument.Length > 0)
+            {
+                return bstrMKDocument;
+            }
+
+            // If that fails, attempt to get the filename from the solution
+            IVsSolution = (IVsSolution)GetService(typeof(SVsSolution));
         }
     }
 }
