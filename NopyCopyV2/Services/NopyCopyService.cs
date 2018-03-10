@@ -15,7 +15,7 @@ using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
-    public class NopyCopyService : Package, SNopyCopyService, INopyCopyService
+    public class NopyCopyService : SNopyCopyService, INopyCopyService
     {
         #region Fields
 
@@ -38,6 +38,7 @@ namespace NopyCopyV2
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
         private readonly IVsSolution2 _solutionService;
+        private readonly IVSDKHelperService _vsdkHelpers;
 
         // Cookies
         private uint? debugEventsCookie;
@@ -53,7 +54,7 @@ namespace NopyCopyV2
             _serviceProvider = serviceProvider;
 
             var dteService = _serviceProvider.GetService(typeof(DTE)) as DTE;
-            var runningDocumentTable = new RunningDocumentTable(serviceProvider);
+            var runningDocumentTable = new RunningDocumentTable(_serviceProvider);
             var solutionService = _serviceProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
             _debuggerEvents = dteService.Events.DebuggerEvents;
             _dte = dteService;
@@ -314,6 +315,32 @@ namespace NopyCopyV2
             var projects = _solutionService.GetProjects();
             foreach (var project in projects)
             {
+                if (project is IVsHierarchy)
+                {
+                    var hier = project as IVsHierarchy;
+                    hier.GetProperty(
+                        (uint)VSITEMID.Root,
+                        (int)__VSHPROPID.VSHPROPID_ExtObject,
+                        out object obj);
+                    var rootId = (uint)obj;
+                    var hierarchyItemsFactory = GetService(typeof(SVsEnumHierarchyItemsFactory)) as IVsEnumHierarchyItemsFactory;
+                    hierarchyItemsFactory.EnumHierarchyItems(
+                        hier,
+                        (uint)__VSEHI.VSEHI_Branch 
+                            | (uint)__VSEHI.VSEHI_Leaf 
+                            | (uint)__VSEHI.VSEHI_Nest,
+                        rootId,
+                        out IEnumHierarchyItems ppenum);
+
+                    var hierAsProj = hier.ToEnvProject();
+                    var selection = new VSITEMSELECTION[hierAsProj.ProjectItems.Count];
+                    while (ppenum.Next(1, selection, out uint fetched) == S_OK
+                        && fetched == 1)
+                    {
+
+                    }
+                }
+
                 foreach (ProjectItem pluginProject in project.ProjectItems)
                 {
                     // Check if the project is a plugin

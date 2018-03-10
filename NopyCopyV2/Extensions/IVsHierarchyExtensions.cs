@@ -162,40 +162,40 @@ namespace NopyCopyV2.Extensions
         /// </summary>
         /// <param name="pscp2Project"></param>
         /// <returns></returns>
-        public static string GetProjectFileName(this IVsSccProject2 pscp2Project)
-        {
-            // Note: Solution folders return currently a name like 
-            // "NewFolder1{1DBFFC2F-6E27-465A-A16A-1AECEA0B2F7E}.storage"
-            //
-            // Your provider may consider returning the solution file as the 
-            // project name for the solution, if it has to persist some 
-            // properties in the "project file"
-            //
-            // UNDONE: What to return for web projects? They return a folder
-            // name, not a filename! Consider returning a pseudo-project 
-            // filename instead of folder.
+        //public static string GetProjectFileName(this IVsSccProject2 pscp2Project)
+        //{
+        //    // Note: Solution folders return currently a name like 
+        //    // "NewFolder1{1DBFFC2F-6E27-465A-A16A-1AECEA0B2F7E}.storage"
+        //    //
+        //    // Your provider may consider returning the solution file as the 
+        //    // project name for the solution, if it has to persist some 
+        //    // properties in the "project file"
+        //    //
+        //    // UNDONE: What to return for web projects? They return a folder
+        //    // name, not a filename! Consider returning a pseudo-project 
+        //    // filename instead of folder.
 
-            IVsHierarchy hierProject = (IVsHierarchy)pscp2Project;
-            IVsProject project = (IVsProject)pscp2Project;
+        //    IVsHierarchy hierProject = (IVsHierarchy)pscp2Project;
+        //    IVsProject project = (IVsProject)pscp2Project;
 
-            // Attempt to get the filename controlled by the root node
-            IList<string> sccFiles = GetNodeFiles(pscp2Project, VSITEMID_ROOT);
-            if (sccFiles.Count > 0 && sccFiles[0] != null && sccFiles[0].Length > 0)
-            {
-                return sccFiles[0];
-            }
+        //    // Attempt to get the filename controlled by the root node
+        //    IList<string> sccFiles = GetNodeFiles(pscp2Project, VSITEMID_ROOT);
+        //    if (sccFiles.Count > 0 && sccFiles[0] != null && sccFiles[0].Length > 0)
+        //    {
+        //        return sccFiles[0];
+        //    }
 
-            // If that failed, attempt to get a name from the IVsProject interface
-            string bstrMKDocument;
-            if (project.GetMkDocument(VSITEMID_ROOT, out bstrMKDocument) == S_OK
-                && bstrMKDocument != null 
-                && bstrMKDocument.Length > 0)
-            {
-                return bstrMKDocument;
-            }
+        //    // If that failed, attempt to get a name from the IVsProject interface
+        //    string bstrMKDocument;
+        //    if (project.GetMkDocument(VSITEMID_ROOT, out bstrMKDocument) == S_OK
+        //        && bstrMKDocument != null 
+        //        && bstrMKDocument.Length > 0)
+        //    {
+        //        return bstrMKDocument;
+        //    }
 
-            // If that fails, attempt to get the filename from the solution
-            IVsSolution = (IVsSolution)GetService(typeof(SVsSolution));
-        }
+        //    // If that fails, attempt to get the filename from the solution
+        //    //IVsSolution = (IVsSolution)GetService(typeof(SVsSolution));
+        //}
     }
 }

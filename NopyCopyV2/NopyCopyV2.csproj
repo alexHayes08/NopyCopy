@@ -65,12 +65,15 @@
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
+    <Compile Include="Modals\PackageV2.cs" />
     <Compile Include="OptionsPage.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\INopyCopyService.cs" />
+    <Compile Include="Services\IVSDKHelperService.cs" />
     <Compile Include="Services\SNopyCopyService.cs" />
-    <Compile Include="Services\VSDKHelpers.cs" />
+    <Compile Include="Services\SVSDKHelperService.cs" />
+    <Compile Include="Services\VSDKHelperService.cs" />
     <Compile Include="Xaml\MainWindowControl.xaml.cs">
       <DependentUpon>MainWindowControl.xaml</DependentUpon>
     </Compile>

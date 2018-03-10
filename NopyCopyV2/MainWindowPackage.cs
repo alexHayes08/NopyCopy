@@ -33,6 +33,7 @@ namespace NopyCopyV2
     /// </para>
     /// </remarks>
     [ProvideService(typeof(SNopyCopyService))]
+    [ProvideService(typeof(SVSDKHelperService))]
     [PackageRegistration(UseManagedResourcesOnly = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -43,7 +44,7 @@ namespace NopyCopyV2
     [ProvideToolWindow(typeof(MainWindow))]
     [ProvideOptionPage(typeof(OptionsPage), 
         OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
-    public sealed class MainWindowPackage : Package, IVsShellPropertyEvents
+    public sealed class MainWindowPackage : PackageV2, IVsShellPropertyEvents
     {
         #region Fields
 
@@ -97,7 +98,14 @@ namespace NopyCopyV2
 
         #region Package Members
 
-        private object CreateService(IServiceContainer container, Type serviceType)
+        private object CreateServiceVSDKHelperService(IServiceContainer container, Type serviceType)
+        {
+            if (typeof(SVSDKHelperService) == serviceType)
+                return new VSDKHelperService(this);
+            return null;
+        }
+
+        private object CreateServiceNopyCopyService(IServiceContainer container, Type serviceType)
         {
             if (typeof(SNopyCopyService) == serviceType)
                 return new NopyCopyService(this);
@@ -112,8 +120,15 @@ namespace NopyCopyV2
         /// </summary>
         protected override void Initialize()
         {
-            ServiceCreatorCallback callback = new ServiceCreatorCallback(CreateService);
-            ((IServiceContainer)this).AddService(typeof(SNopyCopyService), callback);
+            var serviceContainer = this as IServiceContainer;
+
+            ServiceCreatorCallback vsdkHelperCallback = new
+                ServiceCreatorCallback(CreateServiceVSDKHelperService);
+            serviceContainer.AddService(typeof(SVSDKHelperService), vsdkHelperCallback);
+
+            ServiceCreatorCallback nopyCopyCallback =
+                new ServiceCreatorCallback(CreateServiceNopyCopyService);
+            serviceContainer.AddService(typeof(SNopyCopyService), nopyCopyCallback);
 
             nopyCopyService = GetService(typeof(SNopyCopyService)) as NopyCopyService;
 

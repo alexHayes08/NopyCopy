@@ -1,31 +1,29 @@
-﻿using Microsoft.VisualStudio.OLE.Interop;
+﻿using EnvDTE;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NopyCopyV2.Modals;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2.Services
 {
-    public class VSDKHelpers
+    public class VSDKHelperService : PackageV2, SVSDKHelperService, IVSDKHelperService
     {
         #region Fields
 
-        private readonly System.IServiceProvider _serviceProvider;
-        private readonly IVsSolution _solutionService;
+        private IVsEnumHierarchyItemsFactory _enumHierarchyItemsFactory;
+        private System.IServiceProvider _serviceProvider;
+        private IVsSolution _solutionService;
 
         #endregion
 
         #region Ctor(s)
 
-        public VSDKHelpers(System.IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-            _solutionService = _serviceProvider
-                .GetService(typeof(SVsSolution)) as IVsSolution;
-        }
+        public VSDKHelperService()
+        { }
 
         #endregion
 
@@ -35,13 +33,26 @@ namespace NopyCopyV2.Services
 
         #region Methods
 
-        public IList<uint> GetProjectItems(IVsHierarchy pHier)
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            // Now retrieve all needed services
+            _enumHierarchyItemsFactory = GetService<SVsEnumHierarchyItemsFactory, IVsEnumHierarchyItemsFactory>();
+            _solutionService = GetService<SVsSolution, IVsSolution>();
+            //_enumHierarchyItemsFactory = _serviceProvider
+            //    .GetService(typeof(SVsEnumHierarchyItemsFactory)) as IVsEnumHierarchyItemsFactory;
+            //_solutionService = _serviceProvider
+            //    .GetService(typeof(SVsSolution)) as IVsSolution;
+        }
+
+        private IList<uint> GetProjectItems(IVsHierarchy pHier)
         {
             // Start with the project root and walk all expandable nodes in the project
             return GetProjectItems(pHier, VSITEMID_ROOT);
         }
 
-        public IList<uint> GetProjectItems(IVsHierarchy pHier, uint startItemId)
+        private IList<uint> GetProjectItems(IVsHierarchy pHier, uint startItemId)
         {
             List<uint> projectNodes = new List<uint>();
 
@@ -96,7 +107,7 @@ namespace NopyCopyV2.Services
             return projectNodes;
         }
 
-        public IList<string> GetProjectFiles(IVsSccProject2 pscp2Project, uint startItemId)
+        private IList<string> GetProjectFiles(IVsSccProject2 pscp2Project, uint startItemId)
         {
             IList<string> projectFiles = new List<string>();
             IVsHierarchy hierProject = pscp2Project as IVsHierarchy;
@@ -120,7 +131,7 @@ namespace NopyCopyV2.Services
         /// <param name="hier"></param>
         /// <param name="itemId"></param>
         /// <returns></returns>
-        public IList<string> GetNodeFiles(IVsHierarchy hier, uint itemId)
+        private IList<string> GetNodeFiles(IVsHierarchy hier, uint itemId)
         {
             IVsSccProject2 pscp2 = hier as IVsSccProject2;
             return GetNodeFiles(pscp2, itemId);
@@ -132,7 +143,7 @@ namespace NopyCopyV2.Services
         /// <param name="pscp2"></param>
         /// <param name="itemId"></param>
         /// <returns></returns>
-        public IList<string> GetNodeFiles(IVsSccProject2 pscp2, uint itemId)
+        private IList<string> GetNodeFiles(IVsSccProject2 pscp2, uint itemId)
         {
             // NOTE: the function returns only a list of files, containing both regular files and special files
             // If you want to hide the special files (similar with solution explorer), you may need to return 
@@ -200,7 +211,7 @@ namespace NopyCopyV2.Services
         /// Returns the filename of the solution.
         /// </summary>
         /// <returns></returns>
-        public string GetSolutionFileName()
+        private string GetSolutionFileName()
         {
             string solutionDirectory;
             string solutionFile;
@@ -223,7 +234,7 @@ namespace NopyCopyV2.Services
         /// </summary>
         /// <param name="pscp2Project"></param>
         /// <returns></returns>
-        public string GetProjectFileName(IVsSccProject2 pscp2Project)
+        private string GetProjectFileName(IVsSccProject2 pscp2Project)
         {
             // Note: Solution folders return currently a name like 
             // "NewFolder1{1DBFFC2F-6E27-465A-A16A-1AECEA0B2F7E}.storage"
@@ -272,6 +283,16 @@ namespace NopyCopyV2.Services
 
             // If everything failed return null
             return null;
+        }
+
+        string IVSDKHelperService.GetSolutionFileName()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Project GetProjectsInSolution(bool includeNestedProjects)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
