@@ -15,7 +15,6 @@ namespace NopyCopyV2.Services
         #region Fields
 
         private IVsEnumHierarchyItemsFactory _enumHierarchyItemsFactory;
-        private System.IServiceProvider _serviceProvider;
         private IVsSolution _solutionService;
 
         #endregion

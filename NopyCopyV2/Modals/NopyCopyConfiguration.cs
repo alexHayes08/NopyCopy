@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace NopyCopyV2.Modals
 {
@@ -45,6 +46,7 @@ namespace NopyCopyV2.Modals
                 listedFileExtensions.CollectionChanged -= ListedFileExtensions_CollectionChanged;
                 listedFileExtensions = new ObservableCollection<string>(value);
                 listedFileExtensions.CollectionChanged += ListedFileExtensions_CollectionChanged;
+                OnPropertyChanged();
             }
         }
 
@@ -52,12 +54,51 @@ namespace NopyCopyV2.Modals
         /// Determines whether the file extensions in 'ListedFileExtensions' 
         /// are whitelisted or blacklisted.
         /// </summary>
-        public bool IsWhiteList { get; set; }
+        public bool IsWhiteList
+        {
+            get => isWhiteList;
+            set
+            {
+                if (value != isWhiteList)
+                {
+                    isWhiteList = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the file extensions in 'ListedFileExtensions' 
+        /// are whitelisted or blacklisted.
+        /// </summary>
+        public bool IsBlackList
+        {
+            get => !isWhiteList;
+            set
+            {
+                if (value == isWhiteList)
+                {
+                    isWhiteList = !value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         /// <summary>
         /// Used to disable or enable the plugin.
         /// </summary>
-        public bool IsEnabled { get; set; }
+        public bool IsEnabled
+        {
+            get => isEnabled;
+            set
+            {
+                if (isEnabled != value)
+                {
+                    isEnabled = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         #endregion
 
@@ -76,6 +117,11 @@ namespace NopyCopyV2.Modals
         private void ListedFileExtensions_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
             PropertyChanged(this, new PropertyChangedEventArgs("ListedFileCollection"));
+        }
+
+        private void OnPropertyChanged([CallerMemberName]string name = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         #endregion

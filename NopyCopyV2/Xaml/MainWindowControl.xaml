@@ -1,4 +1,5 @@
 ﻿<UserControl x:Class="NopyCopyV2.Xaml.MainWindowControl"
+             xmlns:Converters="clr-namespace:NopyCopyV2.Converters"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -14,10 +15,11 @@
              Foreground="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"
              Background="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}">
     <UserControl.Resources>
-        <Style TargetType="Label">
+        <Converters:VisibilityConverter x:Key="visibilityConverter"/>
+        <!--<Style TargetType="Label">
             <Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}"/>
             <Setter Property="TextBlock.FontSize" Value="{DynamicResource VsFont.EnvironmentFontSize}" />
-            <!--<Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}" />-->
+            --><!--<Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}" />--><!--
             <Setter Property="Foreground" Value="{DynamicResource vsp:EnvironmentColors.ToolWindowTextBrushKey}"/>
         </Style>
         <Style TargetType="TabItem">
@@ -26,7 +28,7 @@
         </Style>
         <Style TargetType="DockPanel">
             <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
-        </Style>
+        </Style>-->
         <Style TargetType="Label" x:Key="ErrorMessageLabelStyle">
             <Setter Property="Foreground" Value="OrangeRed"/>
             <Style.Triggers>
@@ -35,7 +37,7 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="DockPanel" x:Key="VisibleOnlyOn">
+        <!--<Style TargetType="DockPanel" x:Key="VisibleOnlyOn">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Value}" Value="{x:Null}">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -60,7 +62,7 @@
         <Style x:Key="GridViewColumnHeaderGripper" TargetType="Thumb">
             <Setter Property="Width" Value="8"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:HeaderColors.SeparatorLineBrushKey}}"/>
-        </Style>
+        </Style>-->
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -80,39 +82,61 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0">
                         <DockPanel DockPanel.Dock="Top">
-                            <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Background="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" Visibility="Collapsed"/>
+                            <DockPanel.Visibility>
+                                <Binding Converter="{StaticResource visibilityConverter}"/>
+                            </DockPanel.Visibility>
+                            <Label x:Name="Label_NoSolutionLoadedMessage" Content="No solution loaded"/>
+                        </DockPanel>
+                        <DockPanel DockPanel.Dock="Top">
+                            <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Visibility="Collapsed"/>
                             <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
-                            <Label x:Name="Label_SolutionName" DockPanel.Dock="Left" Content="{Binding Path=SolutionName}"></Label>
+                            <Label x:Name="Label_SolutionName" DockPanel.Dock="Left" Content="{Binding Path=TestStringA}" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"></Label>
                         </DockPanel>
                         <CheckBox x:Name="Checkbox_IsNopCommerceProject" Content="Is NopCommerce Project" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False"/>
-                        <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" Checked="Checkbox_Enable_Checked" Unchecked="Checkbox_Enable_Unchecked"/>
+                        <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" Checked="Checkbox_Enable_Checked" Unchecked="Checkbox_Enable_Unchecked" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                     </DockPanel>
-                    <DockPanel Grid.Row="1">
-                        <Label x:Name="Label_ListedFileExtnesionsHeader" Grid.Row="1" DockPanel.Dock="Top">Listed File Extensions</Label>
-                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" DockPanel.Dock="Top"/>
-                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=IsWhiteList}" DockPanel.Dock="Top"/>
+                    <DockPanel Grid.Row="1" Margin="0,0,0,5">
+                        <Label x:Name="Label_ListedFileExtnesionsHeader" Grid.Row="1" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}">Listed File Extensions</Label>
+                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
+                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                     </DockPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal">
-                        <Button x:Name="Button_AddItem" Content="Add Item" Width="Auto" Padding="5" Margin="5" Click="Button_AddItem_Click"/>
-                        <Button x:Name="Button_DeleteItems" Content="Delete Item(s)" Width="Auto" Padding="5" Margin="5" Click="Button_DeleteItems_Click"/>
-                    </StackPanel>
-                    <ListView x:Name="ListView_ListedFileExtensions" Grid.Row="3">
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Grid.Column="1">
+                            <Button x:Name="Button_AddItem" Content="Add Item" Width="Auto" Padding="5" Margin="5" Click="Button_AddItem_Click"/>
+                            <Button x:Name="Button_DeleteItems" Content="Delete Item(s)" Width="Auto" Padding="5" Margin="5" Click="Button_DeleteItems_Click"/>
+                        </StackPanel>
+                    </Grid>
+                    <DockPanel x:Name="DockPanel_NewExtensionContainer"  Grid.Row="3" Visibility="Collapsed">
+                        <DockPanel DockPanel.Dock="Top">
+                            <Label x:Name="Label_newExtension">Enter New Extension:</Label>
+                            <TextBox x:Name="TextBox_newExtension" Margin="4"></TextBox>
+                        </DockPanel>
+                        <Grid DockPanel.Dock="Bottom">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="Button_confirmNewExtension" Background="#FF40A63A" Foreground="White" Click="Button_confirmNewExtension_Click">Confirm</Button>
+                            <Button x:Name="Button_cancelNewExtension" Grid.Column="1" Background="#FFE14A2F" Foreground="White" Click="Button_cancelNewExtension_Click">Cancel</Button>
+                        </Grid>
+                    </DockPanel>
+                    <ListView x:Name="ListView_ListedFileExtensions" Grid.Row="4">
                     </ListView>
                 </Grid>
             </TabItem>
             <TabItem Header="Log">
                 <Grid>
-                    <ListView x:Name="ListView_Log" Margin="0">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <ListView x:Name="ListView_Log" Margin="0"/>
                 </Grid>
             </TabItem>
         </TabControl>

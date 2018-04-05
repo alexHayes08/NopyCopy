@@ -1,4 +1,5 @@
-﻿using EnvDTE;
+﻿using CacheManager.Core;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
@@ -15,6 +16,12 @@ using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
+    public class ProjectSystemNameMap
+    {
+        public string ProjectName { get; set; }
+        public string SystemName { get; set; }
+    }
+
     public class NopyCopyService : SNopyCopyService, INopyCopyService
     {
         #region Fields
@@ -30,32 +37,41 @@ namespace NopyCopyV2
         /// The key is the project name, and the value is the plugins system 
         /// name.
         /// </summary>
-        private IDictionary<string, string> projectRootFolders;
+        private ICacheManager<object> cacheManager;
 
         // Services
-        private readonly IServiceProvider _serviceProvider;
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
         private readonly IVsSolution2 _solutionService;
-        private readonly IVSDKHelperService _vsdkHelpers;
+        //private readonly IVSDKHelperService _vsdkHelpers;
 
         // Cookies
         private uint? debugEventsCookie;
         private uint? runningDocumentTableCookie;
         private uint? solutionEventsCookie;
 
+        #region Cache Keys
+
+        public const string SYSTEM_RUNTIME_CACHE_KEY = "system.runtime.cache";
+        public const string PROJECT_SYSTEMNAMES_CACHE_KEY = "project.systemnames";
+
+        #endregion
+
         #endregion
 
         #region Constructors
 
-        public NopyCopyService(IServiceProvider serviceProvider)
+        public NopyCopyService()
         {
-            _serviceProvider = serviceProvider;
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
 
-            var dteService = _serviceProvider.GetService(typeof(DTE)) as DTE;
-            var runningDocumentTable = new RunningDocumentTable(_serviceProvider);
-            var solutionService = _serviceProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
+            var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
+            var runningDocumentTable = new RunningDocumentTable(ServiceProvider.GlobalProvider);
+            var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+
             _debuggerEvents = dteService.Events.DebuggerEvents;
             _dte = dteService;
             _runningDocumentTable = runningDocumentTable;
@@ -64,14 +80,20 @@ namespace NopyCopyV2
             IsSolutionLoaded = false;
             IsNopCommerceSolution = false;
             observers = new List<IObserver<NopyCopyConfiguration>>();
-            projectRootFolders = new Dictionary<string, string>();
+            cacheManager = CacheFactory.Build(PROJECT_SYSTEMNAMES_CACHE_KEY, settings =>
+            {
+                settings.WithSystemRuntimeCacheHandle(SYSTEM_RUNTIME_CACHE_KEY);
+            });
 
             // Check if a solution is currently loaded
             if (_solutionService.IsSolutionLoaded())
             {
                 // Check it the loaded solution is a nop commerce solution
                 IsSolutionLoaded = true;
+
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 IsNopCommerceSolution = IsStandardNopProject(_solutionService as IVsSolution);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             }
             else
             {
@@ -94,8 +116,10 @@ namespace NopyCopyV2
                     ".cshtml",
                     ".html",
                     ".js",
+                    ".json",
                     ".css",
-                    ".scss"
+                    ".scss",
+                    ".txt"
                 },
                 IsWhiteList = true,
                 IsEnabled = true
@@ -191,19 +215,32 @@ namespace NopyCopyV2
             var document = FindDocument(docCookie);
             var project = document.ProjectItem;
             var fullPath = document.FullName;
+
             // Return if not disabled or if not debugging
             if (!Configuration.IsEnabled || !IsDebugging)
                 return S_OK;
 
-            //var document = FindDocument(docCookie);
-            //var project = document.ProjectItem;
-
             if (IsNopCommerceSolution && ShouldCopy(document.FullName))
             {
+                // Fetch the plugin name and it's corresponding system name
                 var pluginName = document.ProjectItem.ContainingProject.Name;
-                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, pluginName);
-                File.Copy(document.FullName, copyingTo, true);
+                var systemName = (string)cacheManager.GetOrAdd(pluginName, key =>
+                {
+                    if (document.TryGetSystemNameFromDocument(out string sysName))
+                    {
+                        return sysName;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                });
 
+                // Get the path to copy the file to
+                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, pluginName, systemName);
+
+                // Copy the file & emit the event
+                File.Copy(document.FullName, copyingTo, true);
                 OnFileSavedEvent(this, new FileSavedEvent
                 {
                     SavedFile = new FileInfo(document.FullName),
@@ -255,26 +292,8 @@ namespace NopyCopyV2
 
         #region IVsSolutionEvents
 
-        // TODO: On each project load/unload add to projectRootFolders dictionary
         public int OnAfterLoadProject(IVsHierarchy pStubHierarchy, IVsHierarchy pRealHierarchy)
         {
-            try
-            {
-                var project = pStubHierarchy.ToEnvProject();
-                var systemName = pStubHierarchy.GetSystemNameFromDescription();
-
-                if (!string.IsNullOrEmpty(systemName) 
-                    && !projectRootFolders.ContainsKey(project.Name))
-                {
-                    projectRootFolders.Add(project.Name, systemName);
-                }
-            }
-            catch(Exception e)
-            {
-                // TODO: Add some way of error handling
-                Console.WriteLine(e);
-            }
-
             return S_OK;
         }
 
@@ -285,25 +304,6 @@ namespace NopyCopyV2
 
         public int OnBeforeUnloadProject(IVsHierarchy pRealHierarchy, IVsHierarchy pStubHierarchy)
         {
-            try
-            {
-                var project = pStubHierarchy.ToEnvProject();
-                var systemName = pStubHierarchy.GetSystemNameFromDescription();
-
-                if (!string.IsNullOrEmpty(systemName))
-                {
-                    if (projectRootFolders.ContainsKey(project.Name))
-                    {
-                        projectRootFolders.Remove(project.Name);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                // TODO: Add some way of error handling
-                Console.WriteLine(e);
-            }
-
             return S_OK;
         }
 
@@ -312,48 +312,9 @@ namespace NopyCopyV2
             IsSolutionLoaded = true;
             IsNopCommerceSolution = IsStandardNopProject(_solutionService);
 
-            var projects = _solutionService.GetProjects();
-            foreach (var project in projects)
-            {
-                if (project is IVsHierarchy)
-                {
-                    var hier = project as IVsHierarchy;
-                    hier.GetProperty(
-                        (uint)VSITEMID.Root,
-                        (int)__VSHPROPID.VSHPROPID_ExtObject,
-                        out object obj);
-                    var rootId = (uint)obj;
-                    var hierarchyItemsFactory = GetService(typeof(SVsEnumHierarchyItemsFactory)) as IVsEnumHierarchyItemsFactory;
-                    hierarchyItemsFactory.EnumHierarchyItems(
-                        hier,
-                        (uint)__VSEHI.VSEHI_Branch 
-                            | (uint)__VSEHI.VSEHI_Leaf 
-                            | (uint)__VSEHI.VSEHI_Nest,
-                        rootId,
-                        out IEnumHierarchyItems ppenum);
-
-                    var hierAsProj = hier.ToEnvProject();
-                    var selection = new VSITEMSELECTION[hierAsProj.ProjectItems.Count];
-                    while (ppenum.Next(1, selection, out uint fetched) == S_OK
-                        && fetched == 1)
-                    {
-
-                    }
-                }
-
-                foreach (ProjectItem pluginProject in project.ProjectItems)
-                {
-                    // Check if the project is a plugin
-                    if (pluginProject.TryGetSystemNameOfProjectItem(
-                        out string systemName))
-                    {
-                        if (!projectRootFolders.ContainsKey(project.Name))
-                        {
-                            projectRootFolders.Add(project.Name, systemName);
-                        }
-                    }
-                }
-
+            //var projects = _solutionService.GetProjects();
+            //foreach (var project in projects)
+            //{
                 //// Get the Plugins folder
                 //if (project.Name.ToLower() == "plugins")
                 //{
@@ -373,7 +334,7 @@ namespace NopyCopyV2
                 //        }
                 //    }
                 //}
-            }
+            //}
 
             return S_OK;
         }
@@ -398,8 +359,7 @@ namespace NopyCopyV2
             IsSolutionLoaded = false;
             IsNopCommerceSolution = false;
 
-            foreach (var key in projectRootFolders.Keys)
-                projectRootFolders.Remove(key);
+            cacheManager.Clear();
 
             return S_OK;
         }
@@ -412,6 +372,9 @@ namespace NopyCopyV2
         {
             IsDebugging = true;
 
+            // On debug clear the cache manager
+            cacheManager.Clear();
+
             // If the solution is a NopCommerceSolution then begin listening 
             // for file changes
             isNopCommerceSolution = IsStandardNopProject(_solutionService);
@@ -423,6 +386,9 @@ namespace NopyCopyV2
         {
             IsDebugging = false;
             UnadviseDocumentEvents();
+
+            // Clear the cache here as well
+            cacheManager.Clear();
         }
 
         #endregion

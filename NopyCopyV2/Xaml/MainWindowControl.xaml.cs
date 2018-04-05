@@ -5,7 +5,10 @@
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Globalization;
+    using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Data;
 
     /// <summary>
     /// Interaction logic for MainWindowControl.
@@ -14,12 +17,12 @@
     {
         #region Fields
 
-        private const string DEFAULT_SOLUTION_NAME_PLACEHOLDER = 
+        private const string DEFAULT_SOLUTION_NAME_PLACEHOLDER =
             "No solution loaded";
-        private const string CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE = 
+        private const string CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE =
             "The current solution does not appear to be a NopCommerce " +
             "project. Cannot enable the plugin.";
-        private const string CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE = 
+        private const string CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE =
             "If checked then when debugging, modifying and saving files " +
             "(such as views) will be copied to their corresponding ouput " +
             "plugin directory.";
@@ -40,6 +43,12 @@
             ListView_Log.ItemsSource = Logs;
 
             Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
+
+            #region Testing Purposes Only
+
+            TestStringA = "Hello world!";
+
+            #endregion
         }
 
         #endregion
@@ -71,16 +80,6 @@
             }
         }
         public IVsUIShell5 ColorService { get; set; }
-        public bool IsWhiteList
-        {
-            get
-            {
-                if (NopyCopyService == null)
-                    return false;
-                else
-                    return NopyCopyService.Configuration.IsWhiteList;
-            }
-        }
         public string SolutionName
         {
             get
@@ -92,18 +91,42 @@
             }
         }
 
+        #region Testing Purposes Only
+
+        public string TestStringA { get; set; }
+
+        #endregion
+
         #endregion
 
         #region Methods
 
         #region EventHandlers
 
+        private void Button_confirmNewExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (nopyCopyService == null)
+                return;
+
+            var newExtensionName = TextBox_newExtension.Text;
+            TextBox_newExtension.Text = "";
+            nopyCopyService.Configuration.ListedFileExtensions.Add(newExtensionName);
+
+            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
+        private void Button_cancelNewExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            TextBox_newExtension.Text = "";
+            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Collapsed;
+        }
+
         private void Button_AddItem_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             if (nopyCopyService == null)
                 return;
 
-            nopyCopyService.Configuration.ListedFileExtensions.Add("Enter file extension (Ex: *.txt");
+            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Visible;
         }
 
         private void Button_DeleteItems_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -119,12 +142,12 @@
             }
         }
 
-        private void Checkbox_Enable_Checked(object sender, System.Windows.RoutedEventArgs e)
+        private void Checkbox_Enable_Checked(object sender, RoutedEventArgs e)
         {
             nopyCopyService.Configuration.IsEnabled = true;
         }
 
-        private void Checkbox_Enable_Unchecked(object sender, System.Windows.RoutedEventArgs e)
+        private void Checkbox_Enable_Unchecked(object sender, RoutedEventArgs e)
         {
             nopyCopyService.Configuration.IsEnabled = false;
         }
@@ -136,18 +159,18 @@
                 Logs.Add("Started debugging");
 
                 // Have the message box display debug message
-                Label_DebugMessageBox.Visibility = System.Windows.Visibility.Visible;
+                Label_DebugMessageBox.Visibility = Visibility.Visible;
             }
             else
             {
                 Logs.Add("Stopped debugging");
 
                 // Have the message box hide debug message
-                Label_DebugMessageBox.Visibility = System.Windows.Visibility.Collapsed;
+                Label_DebugMessageBox.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void EnableToggleEventHandler(object sender, PropertyChangedEventArgs e)
+        private void ConfigurationUpdatedHandler(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -210,11 +233,16 @@
                 return;
 
             nopyCopyService.OnDebugEvent += DebugEventHandler;
-            nopyCopyService.Configuration.PropertyChanged += EnableToggleEventHandler;
+            nopyCopyService.Configuration.PropertyChanged += ConfigurationUpdatedHandler;
             nopyCopyService.OnNopCommerceSolutionEvent += NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent += FileSavedEventHandler;
 
             attachedHandlers = true;
+
+            ListView_ListedFileExtensions.ItemsSource = nopyCopyService.Configuration.ListedFileExtensions;
+            //Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
+            //RadioButton_ListedFileExtnesions_IsWhiteList.IsChecked = nopyCopyService.Configuration.IsWhiteList;
+            //RadioButton_ListedFileExtnesions_IsBlackList.IsChecked = !nopyCopyService.Configuration.IsWhiteList;
         }
 
         private void DetachEventHanlders()
@@ -223,7 +251,7 @@
                 return;
 
             nopyCopyService.OnDebugEvent -= DebugEventHandler;
-            nopyCopyService.Configuration.PropertyChanged -= EnableToggleEventHandler;
+            nopyCopyService.Configuration.PropertyChanged -= ConfigurationUpdatedHandler;
             nopyCopyService.OnNopCommerceSolutionEvent -= NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent -= FileSavedEventHandler;
 

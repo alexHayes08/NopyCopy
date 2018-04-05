@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace NopyCopyV2.Extensions
 {
@@ -11,6 +12,7 @@ namespace NopyCopyV2.Extensions
     {
         const string DESCRIPTION_NAME = "Description.txt";
         const string PLUGIN_PROJECT_PREFIX = @"Plugins\";
+        const string PLUGIN_PROJECT_REGEX = @"\\Plugins\\";
         const string PLUGIN_PROJECT_TYPE = "2150E333-8FDC-42A3-9474-1A3956D46DE8";
         const string SYSTEM_NAME_PREFIX = "SystemName: ";
 
@@ -133,6 +135,53 @@ namespace NopyCopyV2.Extensions
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="document"></param>
+        /// <param name="systemName"></param>
+        /// <returns></returns>
+        public static bool TryGetSystemNameFromDocument(this Document document,
+            out string systemName)
+        {
+            var foundSystemName = false;
+            systemName = null;
+
+            do
+            {
+                var containingProject = document?.ProjectItem?.ContainingProject;
+
+                if (containingProject == null)
+                    break;
+
+                // Test if the project is in the plugins folder
+                if (!Regex.IsMatch(containingProject.FullName, PLUGIN_PROJECT_REGEX))
+                    break;
+
+                // Iterate over all items
+                foreach (ProjectItem projItem in containingProject.ProjectItems)
+                {
+                    if (projItem.Name.ToLowerInvariant() == "description.txt")
+                    {
+                        // Found the file
+                        var fullFileName = projItem.FileNames[0];
+                        var textContent = File.ReadAllLines(fullFileName);
+
+                        // Locate system name in the text file
+                        systemName = textContent
+                            .First(line => line.StartsWith(SYSTEM_NAME_PREFIX))
+                            .Replace(SYSTEM_NAME_PREFIX, "")
+                            .Trim();
+
+                        foundSystemName = true;
+                        break;
+                    }
+                }
+            } while (false);
+
+            return foundSystemName;
+        }
+
+        /// <summary>
         /// The project item must be a Project!
         /// </summary>
         /// <param name="projectItem"></param>
@@ -239,12 +288,6 @@ namespace NopyCopyV2.Extensions
             return !string.IsNullOrEmpty(systemName);
         }
 
-        // WIP: This needs to be udpated
-        public static bool IsFilePathInPlugin(string fullFilePath, string solutionPath)
-        {
-            return fullFilePath.Contains("Plugins");
-        }
-
         /// <summary>
         /// WIP: Update summary
         /// FIXME: This function doesn't work, need to pass in the output 
@@ -256,29 +299,44 @@ namespace NopyCopyV2.Extensions
         /// This is just the name of the output project folder found in the descriptions folder.
         /// </param>
         /// <returns></returns>
-        public static string GetFilesCorrespondingWebPluginPath(string fullFilePath, string projectName)
+        /// <exception cref="FileNotFoundException">
+        /// When the fullFilePath points to a non-existant file.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the fullFilePath doesn't contain either the projectName
+        /// or a folder named 'plugins' (case insensitive).
+        /// </exception>
+        public static string GetFilesCorrespondingWebPluginPath(string fullFilePath, 
+            string projectName, 
+            string projectSystemName)
         {
-            var pathSuffix = Path.Combine("Presentation", "Nop.Web", "Plugins");
             var fileInfo = new FileInfo(fullFilePath);
-            //var pluginRoot = ;
-            var seperators = new string[] 
-            {
-                Path.DirectorySeparatorChar + "plugins",
-                Path.DirectorySeparatorChar + "Plugins"
-            };
-            var splitName = fullFilePath.Split(seperators, StringSplitOptions.RemoveEmptyEntries);
+            var replacementPartialPath = Path.Combine("Presentation", 
+                "Nop.Web", 
+                "Plugins", 
+                projectSystemName);
 
-            if (splitName.Length < 2)
+            // Verify the file exists, contains a plugins folder, and contains
+            // the project name in the path.
+            if (!fileInfo.Exists)
             {
-                throw new Exception("File wasn't in a folder named plugins");
+                throw new FileNotFoundException();
+            }
+            else if (!fullFilePath.ToLowerInvariant().Contains("plugins"))
+            {
+                throw new InvalidOperationException("Can only process file " +
+                    "paths that contain a 'Plugins' folder.");
+            }
+            else if (!fullFilePath.Contains(projectName))
+            {
+                throw new InvalidOperationException("The 'projectName' " +
+                    "wasn't a part of the fullFilePath.");
             }
 
-            var pluginName = splitName[0] + 
-                Path.DirectorySeparatorChar + 
-                pathSuffix + 
-                splitName[1];
+            // Assert that plugins starts with an uppercase letter
+            fullFilePath = fullFilePath.Replace("plugins", "Plugins");
 
-            return pluginName;
+            return fullFilePath.Replace($"Plugins{Path.DirectorySeparatorChar}{projectName}", replacementPartialPath);
         }
     }
 }

@@ -101,14 +101,14 @@ namespace NopyCopyV2
         private object CreateServiceVSDKHelperService(IServiceContainer container, Type serviceType)
         {
             if (typeof(SVSDKHelperService) == serviceType)
-                return new VSDKHelperService(this);
+                return new VSDKHelperService();
             return null;
         }
 
         private object CreateServiceNopyCopyService(IServiceContainer container, Type serviceType)
         {
             if (typeof(SNopyCopyService) == serviceType)
-                return new NopyCopyService(this);
+                return new NopyCopyService();
             return null;
         }
 
