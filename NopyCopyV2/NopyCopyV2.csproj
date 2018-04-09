@@ -66,6 +66,7 @@
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
+    <Compile Include="Modals\Override.cs" />
     <Compile Include="Modals\PackageV2.cs" />
     <Compile Include="OptionsPage.cs">
       <SubType>Component</SubType>
@@ -103,16 +104,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\MainWindowCommand.png" />
     <Content Include="Resources\ApertureLabsLogoOnly.ico" />
     <Content Include="index.html" />
     <VSCTCompile Include="MainWindowPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
+      <SubType>Designer</SubType>
     </VSCTCompile>
     <Content Include="Resources\ApertureLabsLogo.png" />
     <Content Include="Resources\Aperture_Science.png" />
     <Content Include="Resources\aperture_test_manager.ico" />
     <Content Include="Resources\FavIcon.png" />
-    <Content Include="Resources\MainWindowCommand.png" />
+    <Content Include="Resources\OldMainWindowCommand.png" />
     <Content Include="Resources\MainWindowPackage.ico" />
     <Content Include="Resources\NopyCopyToolWindowCommand.png" />
     <Content Include="stylesheet.css" />

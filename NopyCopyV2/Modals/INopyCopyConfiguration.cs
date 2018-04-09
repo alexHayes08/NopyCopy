@@ -7,5 +7,6 @@ namespace NopyCopyV2.Modals
         bool IsEnabled { get; }
         bool IsWhiteList { get; }
         IList<string> ListedFileExtensions { get; }
+        IList<Override> Overrides { get; }
     }
 }

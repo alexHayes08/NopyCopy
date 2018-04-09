@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.Settings;
-using Microsoft.VisualStudio.Shell.Settings;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -11,25 +9,45 @@ namespace NopyCopyV2.Modals
     {
         #region Fields
 
-        private readonly ShellSettingsManager shellSettingsManager;
         private ObservableCollection<string> listedFileExtensions;
-        private bool isWhiteList;
-        private bool isEnabled;
+        private ObservableCollection<Override> overrides;
+
+        // Reference to the options page
+        private readonly OptionsPage optionsPage;
 
         #endregion
 
         #region Ctor(s)
 
-        public NopyCopyConfiguration(ShellSettingsManager shellSettingsManager)
+        public NopyCopyConfiguration(OptionsPage options)
         {
-            this.shellSettingsManager = shellSettingsManager;
-            var configurationStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
-            var exists = configurationStore.CollectionExists("NopyCopy");
+            optionsPage = options;
+            optionsPage.LoadSettingsFromStorage();
+            optionsPage.Overrides = optionsPage.Overrides ?? new List<Override>();
+            optionsPage.ListedFileExtensions = optionsPage.ListedFileExtensions ?? new List<string>();
 
-            isWhiteList = false;
-            isEnabled = false;
-            listedFileExtensions = new ObservableCollection<string>();
+            // Add common extensions
+            if (optionsPage.ListedFileExtensions.Count == 0)
+            {
+                optionsPage.ListedFileExtensions = new List<string>()
+                {
+                    ".js",
+                    ".json",
+                    ".html",
+                    ".cshtml",
+                    ".css",
+                    ".scss",
+                    ".txt"
+                };
+            }
+
+            optionsPage.SaveSettingsToStorage();
+
+            listedFileExtensions = new ObservableCollection<string>(options.ListedFileExtensions);
+            overrides = new ObservableCollection<Override>(options.Overrides);
+
             listedFileExtensions.CollectionChanged += ListedFileExtensions_CollectionChanged;
+            overrides.CollectionChanged += Overrides_CollectionChanged;
         }
 
         #endregion
@@ -48,10 +66,34 @@ namespace NopyCopyV2.Modals
             }
             set
             {
+                if (value == null)
+                    return;
+
                 // Remove and add the event listener for when changes occur.
                 listedFileExtensions.CollectionChanged -= ListedFileExtensions_CollectionChanged;
                 listedFileExtensions = new ObservableCollection<string>(value);
+                optionsPage.ListedFileExtensions = value;
                 listedFileExtensions.CollectionChanged += ListedFileExtensions_CollectionChanged;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// A list of custom rules of where to copy files that override the
+        /// default behavior.
+        /// </summary>
+        public IList<Override> Overrides
+        {
+            get => overrides;
+            set
+            {
+                if (value == null)
+                    return;
+
+                overrides.CollectionChanged -= Overrides_CollectionChanged;
+                overrides = new ObservableCollection<Override>(value);
+                optionsPage.Overrides = value;
+                overrides.CollectionChanged -= Overrides_CollectionChanged;
                 OnPropertyChanged();
             }
         }
@@ -62,12 +104,12 @@ namespace NopyCopyV2.Modals
         /// </summary>
         public bool IsWhiteList
         {
-            get => isWhiteList;
+            get => optionsPage.IsWhiteList;
             set
             {
-                if (value != isWhiteList)
+                if (value != optionsPage.IsWhiteList)
                 {
-                    isWhiteList = value;
+                    optionsPage.IsWhiteList = value;
                     OnPropertyChanged();
                 }
             }
@@ -79,12 +121,12 @@ namespace NopyCopyV2.Modals
         /// </summary>
         public bool IsBlackList
         {
-            get => !isWhiteList;
+            get => !optionsPage.IsWhiteList;
             set
             {
-                if (value == isWhiteList)
+                if (value == optionsPage.IsWhiteList)
                 {
-                    isWhiteList = !value;
+                    optionsPage.IsWhiteList = !value;
                     OnPropertyChanged();
                 }
             }
@@ -95,12 +137,12 @@ namespace NopyCopyV2.Modals
         /// </summary>
         public bool IsEnabled
         {
-            get => isEnabled;
+            get => optionsPage.IsEnabled;
             set
             {
-                if (isEnabled != value)
+                if (optionsPage.IsEnabled != value)
                 {
-                    isEnabled = value;
+                    optionsPage.IsEnabled = value; 
                     OnPropertyChanged();
                 }
             }
@@ -122,11 +164,19 @@ namespace NopyCopyV2.Modals
 
         private void ListedFileExtensions_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            PropertyChanged(this, new PropertyChangedEventArgs("ListedFileCollection"));
+            optionsPage.ListedFileExtensions = ListedFileExtensions;
+            PropertyChanged(this, new PropertyChangedEventArgs(nameof(ListedFileExtensions)));
+        }
+
+        private void Overrides_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            optionsPage.Overrides = Overrides;
+            PropertyChanged(this, new PropertyChangedEventArgs(nameof(Overrides)));
         }
 
         private void OnPropertyChanged([CallerMemberName]string name = "")
         {
+            optionsPage.SaveSettingsToStorage();
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 

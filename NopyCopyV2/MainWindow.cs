@@ -4,8 +4,8 @@ using NopyCopyV2.Properties;
 using NopyCopyV2.Xaml;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
+using System.Windows.Threading;
 
 namespace NopyCopyV2
 {
@@ -25,7 +25,8 @@ namespace NopyCopyV2
     {
         #region Fields
 
-        private MainWindowControl mainWindow;
+        public MainWindowControl mainWindow;
+        public NopyCopyService NopyCopyService;
 
         #endregion
 
@@ -42,34 +43,23 @@ namespace NopyCopyV2
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on
             // the object returned by the Content property.
             mainWindow = new MainWindowControl();
+            mainWindow.DataContext = mainWindow;
+            mainWindow.Dispatcher.UnhandledException += Dispatcher_UnhandledException;
             Content = mainWindow;
+
+            //ToolBar = new CommandID(MainWindowCommand.CommandSet, MainWindowCommand.CommandId);
+            //ToolBarLocation = (int)VSTWT_LOCATION.VSTWT_TOP;
         }
 
         #endregion
 
         #region Properties
 
-        public bool? Enable
+        public string ErrorMessage
         {
             get
             {
-                return mainWindow.Checkbox_Enable.IsChecked;
-            }
-            set
-            {
-                mainWindow.Checkbox_Enable.IsChecked = value;
-            }
-        }
-
-        public bool? IsNopCommerceProject
-        {
-            get
-            {
-                return mainWindow.Checkbox_IsNopCommerceProject.IsChecked;
-            }
-            set
-            {
-                mainWindow.Checkbox_IsNopCommerceProject.IsChecked = value;
+                return mainWindow.ErrorMessage;
             }
         }
 
@@ -105,6 +95,19 @@ namespace NopyCopyV2
         public void SetupEvents(NopyCopyService nopyCopyService)
         {
             mainWindow.NopyCopyService = nopyCopyService;
+            NopyCopyService = nopyCopyService;
+        }
+
+        private void Dispatcher_UnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine(e.ToString());
+            if (e.Exception is InvalidCastException)
+            {
+                // FIXME: Currently this code assumes that it was caused by
+                // the presentation framework.
+                mainWindow.ErrorMessage = e.ToString();
+                e.Handled = true;
+            }
         }
 
         #endregion

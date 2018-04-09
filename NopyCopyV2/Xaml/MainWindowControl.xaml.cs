@@ -5,11 +5,9 @@
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Globalization;
-    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Data;
+    using System.Windows.Media;
 
     /// <summary>
     /// Interaction logic for MainWindowControl.
@@ -43,13 +41,10 @@
             Logs = new List<string>();
             ListView_Log.ItemsSource = Logs;
 
-            Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
-
-            #region Testing Purposes Only
-
-            TestStringA = "Hello world!";
-
-            #endregion
+            Checkbox_Enable.ToolTip = new ToolTip
+            {
+                Content = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE
+            };
         }
 
         #endregion
@@ -67,6 +62,7 @@
 
         public bool LoadedService { get; set; }
         public IList<string> Logs { get; private set; }
+        public string ErrorMessage { get; set; }
         public NopyCopyService NopyCopyService
         {
             get
@@ -92,19 +88,37 @@
             }
         }
 
-        #region Testing Purposes Only
-
-        public string TestStringA { get; set; }
-
-        #endregion
-
         #endregion
 
         #region Methods
 
         #region EventHandlers
 
-        private void Button_confirmNewExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void Button_AddOverride_Click(object sender, RoutedEventArgs e)
+        {
+            if (nopyCopyService == null)
+                return;
+
+            SetNewOverrideVisibility(false);
+        }
+
+        private void Button_NewOverrideConfirm_Click(object sender, RoutedEventArgs e)
+        {
+            if (nopyCopyService == null)
+                return;
+
+            SetNewOverrideVisibility(true);
+        }
+
+        private void Button_NewOverrideCancel_Click(object sender, RoutedEventArgs e)
+        {
+            if (nopyCopyService == null)
+                return;
+
+            SetNewOverrideVisibility(true);
+        }
+
+        private void Button_confirmNewExtension_Click(object sender, RoutedEventArgs e)
         {
             if (nopyCopyService == null)
                 return;
@@ -114,12 +128,14 @@
             nopyCopyService.Configuration.ListedFileExtensions.Add(newExtensionName);
 
             DockPanel_NewExtensionContainer.Visibility = Visibility.Collapsed;
+            StackPanel_AddAndDeleteFileExtBtnsContainer.Visibility = Visibility.Visible;
         }
 
         private void Button_cancelNewExtension_Click(object sender, RoutedEventArgs e)
         {
             TextBox_newExtension.Text = "";
             DockPanel_NewExtensionContainer.Visibility = Visibility.Collapsed;
+            StackPanel_AddAndDeleteFileExtBtnsContainer.Visibility = Visibility.Visible;
         }
 
         private void Button_AddItem_Click(object sender, RoutedEventArgs e)
@@ -128,6 +144,8 @@
                 return;
 
             DockPanel_NewExtensionContainer.Visibility = Visibility.Visible;
+            StackPanel_AddAndDeleteFileExtBtnsContainer.Visibility = Visibility.Collapsed;
+            TextBox_newExtension.Text = "";
         }
 
         private void Button_DeleteItems_Click(object sender, RoutedEventArgs e)
@@ -144,15 +162,15 @@
             }
         }
 
-        private void Checkbox_Enable_Checked(object sender, RoutedEventArgs e)
-        {
-            nopyCopyService.Configuration.IsEnabled = true;
-        }
+        //private void Checkbox_Enable_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    nopyCopyService.Configuration.IsEnabled = true;
+        //}
 
-        private void Checkbox_Enable_Unchecked(object sender, RoutedEventArgs e)
-        {
-            nopyCopyService.Configuration.IsEnabled = false;
-        }
+        //private void Checkbox_Enable_Unchecked(object sender, RoutedEventArgs e)
+        //{
+        //    nopyCopyService.Configuration.IsEnabled = false;
+        //}
 
         private void DebugEventHandler(object sender, DebugEvent e)
         {
@@ -162,6 +180,18 @@
 
                 // Have the message box display debug message
                 Label_DebugMessageBox.Visibility = Visibility.Visible;
+                DockPanel_StatusesContainer.Visibility = Visibility.Visible;
+
+                if (nopyCopyService.Configuration.IsEnabled)
+                {
+                    Ellipse_ActiveIndicator.Fill = new SolidColorBrush(Colors.Green);
+                    Label_ActiveIndicator.Content = "Active";
+                }
+                else
+                {
+                    Ellipse_ActiveIndicator.Fill = new SolidColorBrush(Colors.Orange);
+                    Label_ActiveIndicator.Content = "Inactive";
+                }
             }
             else
             {
@@ -169,6 +199,7 @@
 
                 // Have the message box hide debug message
                 Label_DebugMessageBox.Visibility = Visibility.Collapsed;
+                DockPanel_StatusesContainer.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -223,6 +254,20 @@
 
         #endregion
 
+        private void SetNewOverrideVisibility(bool showToolbar)
+        {
+            if (showToolbar)
+            {
+                Grid_OverridesToolbar.Visibility = Visibility.Visible;
+                DockPanel_NewOverrideContainer.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                Grid_OverridesToolbar.Visibility = Visibility.Collapsed;
+                DockPanel_NewOverrideContainer.Visibility = Visibility.Visible;
+            }
+        }
+
         public void UpdateColors()
         {
             // TODO
@@ -262,7 +307,7 @@
 
         public void OnNext(NopyCopyConfiguration value)
         {
-            this.Checkbox_Enable.IsChecked = value.IsEnabled;
+            Checkbox_Enable.IsChecked = value.IsEnabled;
         }
 
         public void OnError(Exception error)

@@ -74,7 +74,7 @@ namespace NopyCopyV2
 
         private void ShowToolWindow(object sender, EventArgs e)
         {
-            // Get the instance number 0 of this tool window. This window is a  single instance so 
+            // Get the instance number 0 of this tool window. This window is a single instance so 
             // this instance is the only one.
             // The last flag is set to true so that if the tool window doesn't exist it will be created
             toolWindow = FindToolWindow(typeof(MainWindow), 0, true) as MainWindow;
@@ -108,7 +108,10 @@ namespace NopyCopyV2
         private object CreateServiceNopyCopyService(IServiceContainer container, Type serviceType)
         {
             if (typeof(SNopyCopyService) == serviceType)
-                return new NopyCopyService();
+            {
+                var optionsPage = GetDialogPage(typeof(OptionsPage)) as OptionsPage;
+                return new NopyCopyService(this, optionsPage);
+            }
             return null;
         }
 
@@ -120,6 +123,7 @@ namespace NopyCopyV2
         /// </summary>
         protected override void Initialize()
         {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var serviceContainer = this as IServiceContainer;
 
             ServiceCreatorCallback vsdkHelperCallback = new
@@ -167,6 +171,8 @@ namespace NopyCopyV2
 
             toolWindow.ColorService = colorService;
             toolWindow.SetupEvents(nopyCopyService);
+
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         }
 
         #endregion

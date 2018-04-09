@@ -1,8 +1,7 @@
-﻿using System;
-using System.ComponentModel.Design;
-using System.Globalization;
-using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using System;
+using System.ComponentModel.Design;
 
 namespace NopyCopyV2
 {
@@ -33,12 +32,7 @@ namespace NopyCopyV2
         /// <param name="package">Owner package, not null.</param>
         private MainWindowCommand(Package package)
         {
-            if (package == null)
-            {
-                throw new ArgumentNullException("package");
-            }
-
-            this.package = package;
+            this.package = package ?? throw new ArgumentNullException("package");
 
             OleMenuCommandService commandService = this.ServiceProvider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (commandService != null)
@@ -94,8 +88,10 @@ namespace NopyCopyV2
                 throw new NotSupportedException("Cannot create tool window");
             }
 
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
             Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         }
     }
 }

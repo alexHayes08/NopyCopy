@@ -41,6 +41,9 @@ namespace NopyCopyV2
         [Category(CATEGORY_NAME)]
         public IList<string> ListedFileExtensions { get; set; }
 
+        [Category(CATEGORY_NAME)]
+        public IList<Override> Overrides { get; set; }
+
         #endregion
     }
 }

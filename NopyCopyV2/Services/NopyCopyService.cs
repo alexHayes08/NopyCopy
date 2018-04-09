@@ -7,28 +7,21 @@ using NopyCopyV2.Modals;
 using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using static Microsoft.VisualStudio.VSConstants;
-using static NopyCopyV2.Extensions.IVsHierarchyExtensions;
 using static NopyCopyV2.Extensions.IVsSolutionExtensions;
 using static NopyCopyV2.Extensions.NopProjectExtensions;
 
 namespace NopyCopyV2
 {
-    public class ProjectSystemNameMap
-    {
-        public string ProjectName { get; set; }
-        public string SystemName { get; set; }
-    }
-
     public class NopyCopyService : SNopyCopyService, INopyCopyService
     {
         #region Fields
 
         private const string DESCRIPTION_SYSTEM_NAME_LINE_PREFIX = "SystemName:";
+
+        private readonly IServiceProvider serviceProvider;
 
         private bool isSolutionLoaded;
         private bool isNopCommerceSolution;
@@ -65,8 +58,10 @@ namespace NopyCopyV2
 
         #region Constructors
 
-        public NopyCopyService()
+        public NopyCopyService(IServiceProvider serviceProvider, OptionsPage options)
         {
+            this.serviceProvider = serviceProvider;
+
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
 
             var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
@@ -112,24 +107,7 @@ namespace NopyCopyV2
             AdviseSolutionEvents();
 
             // Init nopyCopyService
-            // TODO: Get configuration from VS options
-            Configuration = new NopyCopyConfiguration(shellSettingsService);
-            //{
-            //    ListedFileExtensions = new ObservableCollection<string>()
-            //    {
-            //        ".cshtml",
-            //        ".html",
-            //        ".js",
-            //        ".json",
-            //        ".css",
-            //        ".scss",
-            //        ".txt"
-            //    },
-            //    IsWhiteList = true,
-            //    IsEnabled = true
-            //};
-
-            Configuration.PropertyChanged += Configuration_PropertyChanged;
+            Configuration = new NopyCopyConfiguration(options);
 
             AdviseRunningDocumentEvents();
         }
@@ -395,20 +373,6 @@ namespace NopyCopyV2
 
             // Clear the cache here as well
             cacheManager.Clear();
-        }
-
-        #endregion
-
-        #region ConfigurationChanged
-
-        /// <summary>
-        /// Updates vs stored settings to reflect the changes.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Configuration_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         #endregion
