@@ -6,6 +6,7 @@
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Globalization;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Data;
@@ -112,33 +113,34 @@
             TextBox_newExtension.Text = "";
             nopyCopyService.Configuration.ListedFileExtensions.Add(newExtensionName);
 
-            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Collapsed;
+            DockPanel_NewExtensionContainer.Visibility = Visibility.Collapsed;
         }
 
-        private void Button_cancelNewExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void Button_cancelNewExtension_Click(object sender, RoutedEventArgs e)
         {
             TextBox_newExtension.Text = "";
-            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Collapsed;
+            DockPanel_NewExtensionContainer.Visibility = Visibility.Collapsed;
         }
 
-        private void Button_AddItem_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void Button_AddItem_Click(object sender, RoutedEventArgs e)
         {
             if (nopyCopyService == null)
                 return;
 
-            DockPanel_NewExtensionContainer.Visibility = System.Windows.Visibility.Visible;
+            DockPanel_NewExtensionContainer.Visibility = Visibility.Visible;
         }
 
-        private void Button_DeleteItems_Click(object sender, System.Windows.RoutedEventArgs e)
+        private void Button_DeleteItems_Click(object sender, RoutedEventArgs e)
         {
             if (nopyCopyService == null)
                 return;
 
-            var selectedItems = ListView_ListedFileExtensions.SelectedItems;
-            foreach (var item in selectedItems)
+            while(ListView_ListedFileExtensions.SelectedItems.Count > 0)
             {
-                if (item is string)
-                    nopyCopyService.Configuration.ListedFileExtensions.Remove(item as string);
+                if (ListView_ListedFileExtensions.SelectedItems[0] is string item)
+                {
+                    nopyCopyService.Configuration.ListedFileExtensions.Remove(item);
+                }
             }
         }
 

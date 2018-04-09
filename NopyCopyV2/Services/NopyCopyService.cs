@@ -2,11 +2,13 @@
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell.Settings;
 using NopyCopyV2.Modals;
 using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using static Microsoft.VisualStudio.VSConstants;
@@ -41,6 +43,7 @@ namespace NopyCopyV2
 
         // Services
         private readonly RunningDocumentTable _runningDocumentTable;
+        private readonly ShellSettingsManager _shellSettingsManager;
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
         private readonly IVsSolution2 _solutionService;
@@ -69,6 +72,7 @@ namespace NopyCopyV2
             var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
             var runningDocumentTable = new RunningDocumentTable(ServiceProvider.GlobalProvider);
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
+            var shellSettingsService = new ShellSettingsManager(ServiceProvider.GlobalProvider);
 
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
@@ -109,21 +113,23 @@ namespace NopyCopyV2
 
             // Init nopyCopyService
             // TODO: Get configuration from VS options
-            Configuration = new NopyCopyConfiguration
-            {
-                ListedFileExtensions = new ObservableCollection<string>()
-                {
-                    ".cshtml",
-                    ".html",
-                    ".js",
-                    ".json",
-                    ".css",
-                    ".scss",
-                    ".txt"
-                },
-                IsWhiteList = true,
-                IsEnabled = true
-            };
+            Configuration = new NopyCopyConfiguration(shellSettingsService);
+            //{
+            //    ListedFileExtensions = new ObservableCollection<string>()
+            //    {
+            //        ".cshtml",
+            //        ".html",
+            //        ".js",
+            //        ".json",
+            //        ".css",
+            //        ".scss",
+            //        ".txt"
+            //    },
+            //    IsWhiteList = true,
+            //    IsEnabled = true
+            //};
+
+            Configuration.PropertyChanged += Configuration_PropertyChanged;
 
             AdviseRunningDocumentEvents();
         }
@@ -389,6 +395,20 @@ namespace NopyCopyV2
 
             // Clear the cache here as well
             cacheManager.Clear();
+        }
+
+        #endregion
+
+        #region ConfigurationChanged
+
+        /// <summary>
+        /// Updates vs stored settings to reflect the changes.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Configuration_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

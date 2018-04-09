@@ -43,12 +43,33 @@
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
             </Style.Triggers>
-        </Style>
-        <Style TargetType="ListView">
+        </Style>-->
+        <Style TargetType="{x:Type CheckBox}">
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
         </Style>
-        <Style TargetType="{x:Type Path}">
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <Style TargetType="{x:Type TabControl}">
+            <Setter Property="IsTextSearchEnabled" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTabGradientBrushKey}}"/>
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <Style TargetType="{x:Type TabItem}">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <Style TargetType="{x:Type ListView}">
+            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
+        </Style>
+        <!--<Style TargetType="{x:Type Path}">
             <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.GlyphBrushKey}}"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GridViewColumnHeader}}}" Value="True">
@@ -100,7 +121,7 @@
                         <CheckBox x:Name="Checkbox_IsNopCommerceProject" Content="Is NopCommerce Project" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False"/>
                         <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" Checked="Checkbox_Enable_Checked" Unchecked="Checkbox_Enable_Unchecked" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                     </DockPanel>
-                    <DockPanel Grid.Row="1" Margin="0,0,0,5">
+                    <DockPanel Grid.Row="1" Margin="0,0,0,5" Visibility="Collapsed">
                         <Label x:Name="Label_ListedFileExtnesionsHeader" Grid.Row="1" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}">Listed File Extensions</Label>
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
@@ -132,6 +153,11 @@
                     </DockPanel>
                     <ListView x:Name="ListView_ListedFileExtensions" Grid.Row="4">
                     </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Overrides">
+                <Grid>
+
                 </Grid>
             </TabItem>
             <TabItem Header="Log">

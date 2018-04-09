@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.Settings;
+using Microsoft.VisualStudio.Shell.Settings;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,6 +11,7 @@ namespace NopyCopyV2.Modals
     {
         #region Fields
 
+        private readonly ShellSettingsManager shellSettingsManager;
         private ObservableCollection<string> listedFileExtensions;
         private bool isWhiteList;
         private bool isEnabled;
@@ -18,8 +20,12 @@ namespace NopyCopyV2.Modals
 
         #region Ctor(s)
 
-        public NopyCopyConfiguration()
+        public NopyCopyConfiguration(ShellSettingsManager shellSettingsManager)
         {
+            this.shellSettingsManager = shellSettingsManager;
+            var configurationStore = shellSettingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+            var exists = configurationStore.CollectionExists("NopyCopy");
+
             isWhiteList = false;
             isEnabled = false;
             listedFileExtensions = new ObservableCollection<string>();
