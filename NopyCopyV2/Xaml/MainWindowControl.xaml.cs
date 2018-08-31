@@ -1,26 +1,26 @@
-﻿namespace NopyCopyV2.Xaml
-{
-    using Microsoft.VisualStudio.Shell.Interop;
-    using NopyCopyV2.Modals;
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Windows;
-    using System.Windows.Controls;
-    using System.Windows.Media;
+﻿using Microsoft.VisualStudio.Shell.Interop;
+using NopyCopyV2.Modals;
+using NopyCopyV2.Modals.Extensions;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using NopyCopyConfiguration = NopyCopyV2.Modals.NopyCopyConfiguration;
 
+namespace NopyCopyV2.Xaml
+{
     /// <summary>
     /// Interaction logic for MainWindowControl.
     /// </summary>
-    public partial class MainWindowControl : UserControl
+    public partial class MainWindowControl : UserControl, IObserver<INopyCopyConfiguration>
     {
         #region Fields
 
         private const string DEFAULT_SOLUTION_NAME_PLACEHOLDER =
             "No solution loaded";
-        private const string CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE =
-            "The current solution does not appear to be a NopCommerce " +
-            "project. Cannot enable the plugin.";
         private const string CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE =
             "If checked then when debugging, modifying and saving files " +
             "(such as views) will be copied to their corresponding ouput " +
@@ -43,7 +43,7 @@
 
             Checkbox_Enable.ToolTip = new ToolTip
             {
-                Content = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE
+                Content = DEFAULT_SOLUTION_NAME_PLACEHOLDER
             };
         }
 
@@ -125,7 +125,7 @@
 
             var newExtensionName = TextBox_newExtension.Text;
             TextBox_newExtension.Text = "";
-            nopyCopyService.Configuration.ListedFileExtensions.Add(newExtensionName);
+            nopyCopyService.Configuration.WatchedFileExtensions += ", " + newExtensionName;
 
             DockPanel_NewExtensionContainer.Visibility = Visibility.Collapsed;
             StackPanel_AddAndDeleteFileExtBtnsContainer.Visibility = Visibility.Visible;
@@ -153,11 +153,14 @@
             if (nopyCopyService == null)
                 return;
 
-            while(ListView_ListedFileExtensions.SelectedItems.Count > 0)
+            while(ListView_WatchedFileExtensions.SelectedItems.Count > 0)
             {
-                if (ListView_ListedFileExtensions.SelectedItems[0] is string item)
+                if (ListView_WatchedFileExtensions.SelectedItems[0] is string item)
                 {
-                    nopyCopyService.Configuration.ListedFileExtensions.Remove(item);
+                    nopyCopyService
+                        .Configuration
+                        .GetWatchedFileExensions()
+                        .Where(str => str != item);
                 }
             }
         }
@@ -217,7 +220,7 @@
                     }
                     else
                     {
-                        Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_DISABLED_MESSAGE;
+                        Checkbox_Enable.ToolTip = DEFAULT_SOLUTION_NAME_PLACEHOLDER;
                         Logs.Add("Disabled plugin");
                     }
 
@@ -225,7 +228,7 @@
                 case nameof(nopyCopyService.Configuration.IsWhiteList):
                     // TODO
                     break;
-                case nameof(nopyCopyService.Configuration.ListedFileExtensions):
+                case nameof(nopyCopyService.Configuration.WatchedFileExtensions):
                     // TODO
                     break;
             }
@@ -256,16 +259,16 @@
 
         private void SetNewOverrideVisibility(bool showToolbar)
         {
-            if (showToolbar)
-            {
-                Grid_OverridesToolbar.Visibility = Visibility.Visible;
-                DockPanel_NewOverrideContainer.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                Grid_OverridesToolbar.Visibility = Visibility.Collapsed;
-                DockPanel_NewOverrideContainer.Visibility = Visibility.Visible;
-            }
+            //if (showToolbar)
+            //{
+            //    Grid_OverridesToolbar.Visibility = Visibility.Visible;
+            //    DockPanel_NewOverrideContainer.Visibility = Visibility.Collapsed;
+            //}
+            //else
+            //{
+            //    Grid_OverridesToolbar.Visibility = Visibility.Collapsed;
+            //    DockPanel_NewOverrideContainer.Visibility = Visibility.Visible;
+            //}
         }
 
         public void UpdateColors()
@@ -286,8 +289,10 @@
 
             attachedHandlers = true;
 
-            ListView_ListedFileExtensions.ItemsSource = nopyCopyService.Configuration.ListedFileExtensions;
-            //Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
+            ListView_WatchedFileExtensions.ItemsSource = nopyCopyService
+                .Configuration
+                .GetWatchedFileExensions();
+            Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
             //RadioButton_ListedFileExtnesions_IsWhiteList.IsChecked = nopyCopyService.Configuration.IsWhiteList;
             //RadioButton_ListedFileExtnesions_IsBlackList.IsChecked = !nopyCopyService.Configuration.IsWhiteList;
         }
@@ -305,19 +310,22 @@
             attachedHandlers = false;
         }
 
-        public void OnNext(NopyCopyConfiguration value)
-        {
-            Checkbox_Enable.IsChecked = value.IsEnabled;
-        }
-
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            Logs.Add(error.ToString());
         }
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            Logs.Add("IObserver<INopyCopyConfiguration>.Completed() called.");
+        }
+
+        public void OnNext(INopyCopyConfiguration value)
+        {
+            ListView_WatchedFileExtensions.ItemsSource = value
+                .GetWatchedFileExensions();
+
+            Checkbox_Enable.IsChecked = value.IsEnabled;
         }
 
         #endregion

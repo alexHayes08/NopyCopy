@@ -3,6 +3,11 @@ using System.ComponentModel.Design;
 
 namespace NopyCopyV2.Modals
 {
+    /// <summary>
+    ///     Most likely going to delete this.
+    ///     Suppose to be a more dev-friendly but less powerfull version of
+    ///     Package.
+    /// </summary>
     public class PackageV2 : Package
     {
         protected void AddService<S, T>()
@@ -22,6 +27,7 @@ namespace NopyCopyV2.Modals
 
         protected T GetService<S, T>() where T : class
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             return GetService(typeof(S)) as T;
         }
     }

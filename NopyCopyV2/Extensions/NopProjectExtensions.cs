@@ -1,4 +1,6 @@
 ﻿using EnvDTE;
+using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
@@ -27,31 +29,31 @@ namespace NopyCopyV2.Extensions
             var projects = solution.GetProjects();
 
             const string LibrariesName = "Libraries";
-            const string LibrariesFullName = "Libraries";
+            //const string LibrariesFullName = "Libraries";
             bool foundLibraries = false;
 
             const string PresentationName = "Presentation";
-            const string PresentationFullName = "Presentation";
+            //const string PresentationFullName = "Presentation";
             bool foundPresentation = false;
 
             const string TestsName = "Tests";
-            const string TestsFullName = "Tests";
+            //const string TestsFullName = "Tests";
             bool foundTests = false;
 
             const string PluginsName = "Plugins";
-            const string PluginsFullName = "Plugins";
+            //const string PluginsFullName = "Plugins";
             bool foundPlugins = false;
 
             const string Nop_WebName = "Nop.Web";
-            const string Nop_WebFullName = @"Presentation\Nop.Web\Nop.Web.csproj";
+            //const string Nop_WebFullName = @"Presentation\Nop.Web\Nop.Web.csproj";
             bool foundNop_Web = false;
 
             const string Nop_CoreName = "Nop.Core";
-            const string Nop_CoreFullName = @"Libraries\Nop.Data\Nop.Data.csproj";
+            //const string Nop_CoreFullName = @"Libraries\Nop.Data\Nop.Data.csproj";
             bool foundNop_Core = false;
 
             const string Nop_ServicesName = "Nop.Services";
-            const string Nop_ServicesFullName = @"Libraries\Nop.Services\Nop.Services.csproj";
+            //const string Nop_ServicesFullName = @"Libraries\Nop.Services\Nop.Services.csproj";
             bool foundNop_Services = false;
 
             foreach (var project in projects)
@@ -311,7 +313,7 @@ namespace NopyCopyV2.Extensions
             string projectSystemName)
         {
             var fileInfo = new FileInfo(fullFilePath);
-            var replacementPartialPath = Path.Combine("Presentation", 
+            var replacementPartialPath = Path.Combine("Presentation",
                 "Nop.Web", 
                 "Plugins", 
                 projectSystemName);
@@ -337,6 +339,71 @@ namespace NopyCopyV2.Extensions
             fullFilePath = fullFilePath.Replace("plugins", "Plugins");
 
             return fullFilePath.Replace($"Plugins{Path.DirectorySeparatorChar}{projectName}", replacementPartialPath);
+        }
+
+        /// <summary>
+        /// Retrieves the path where output files are put when building. This
+        /// will reflect the active solution configuration (debug/release).
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="outputPath"></param>
+        /// <returns></returns>
+        public static bool TryGetOutputPath(this Project project, out string outputPath)
+        {
+            try
+            {
+                var fullPath = project.Properties.Item("FullPath").Value.ToString();
+                var outputDir = project.ConfigurationManager.ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
+
+                outputPath = Path.Combine(fullPath, outputDir);
+                return true;
+            }
+            catch (Exception)
+            {
+                outputPath = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if an item has the property 'CopyToOutput' is to 'Always' or
+        /// 'PreserveNewest'. Returns false if not set or set to 'Never'.
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static bool IsItemCopiedToOutput(Project project, ProjectItem item)
+        {
+            var dictionary = new Dictionary<string, object>();
+            foreach (Property p in item.Properties)
+            {
+                dictionary[p.Name] = p.Value;
+            }
+
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var result = false;
+
+            ((IVsSolution)Package.GetGlobalService(typeof(SVsSolution)))
+                .GetProjectOfUniqueName(project.UniqueName, out IVsHierarchy hierarchy);
+
+            if (hierarchy is IVsBuildPropertyStorage buildPropertyStorage)
+            {
+                var fullPath = (string)item.Properties.Item("FullPath").Value;
+                hierarchy.ParseCanonicalName(fullPath, out uint itemId);
+
+                if (VSConstants.S_OK == buildPropertyStorage.GetItemAttribute(itemId, fullPath, out string value))
+                {
+                    result = 0 != string.Compare(value,
+                        "Never",
+                        StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+
+            return result;
         }
     }
 }

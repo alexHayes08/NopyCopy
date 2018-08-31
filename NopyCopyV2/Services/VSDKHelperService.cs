@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using NopyCopyV2.Modals;
+using NopyCopyV2.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -10,7 +10,7 @@ using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2.Services
 {
-    public class VSDKHelperService : PackageV2, SVSDKHelperService, IVSDKHelperService
+    public class VSDKHelperService : Package, SVSDKHelperService, IVSDKHelperService
     {
         #region Fields
 
@@ -34,15 +34,13 @@ namespace NopyCopyV2.Services
 
         protected override void Initialize()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             base.Initialize();
 
             // Now retrieve all needed services
-            _enumHierarchyItemsFactory = GetService<SVsEnumHierarchyItemsFactory, IVsEnumHierarchyItemsFactory>();
-            _solutionService = GetService<SVsSolution, IVsSolution>();
-            //_enumHierarchyItemsFactory = _serviceProvider
-            //    .GetService(typeof(SVsEnumHierarchyItemsFactory)) as IVsEnumHierarchyItemsFactory;
-            //_solutionService = _serviceProvider
-            //    .GetService(typeof(SVsSolution)) as IVsSolution;
+            _enumHierarchyItemsFactory = Package.GetGlobalService(typeof(SVsEnumHierarchyItemsFactory)) as IVsEnumHierarchyItemsFactory;
+            _solutionService = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
         }
 
         private IList<uint> GetProjectItems(IVsHierarchy pHier)
@@ -286,12 +284,32 @@ namespace NopyCopyV2.Services
 
         string IVSDKHelperService.GetSolutionFileName()
         {
-            throw new NotImplementedException();
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (GetGlobalService(typeof(SVsSolution)) is IVsSolution solution)
+            {
+                solution.GetSolutionInfo(out string solutionDir,
+                    out string solutionFile,
+                    out string userOptsFile);
+
+                return null;
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
 
-        public Project GetProjectsInSolution(bool includeNestedProjects)
+        public IEnumerable<Project> GetProjectsInSolution(bool includeNestedProjects)
         {
-            throw new NotImplementedException();
+            if (GetGlobalService(typeof(SVsSolution)) is IVsSolution solution)
+            {
+                return solution.GetProjects();
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
 
         #endregion

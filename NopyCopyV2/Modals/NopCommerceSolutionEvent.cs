@@ -5,7 +5,6 @@ namespace NopyCopyV2.Modals
     public class NopCommerceSolutionEvent : EventArgs
     {
         public bool SolutionLoaded { get; set; }
-        public bool IsNopCommerceSolution { get; set; }
         public string SolutionName { get; set; }
     }
 }

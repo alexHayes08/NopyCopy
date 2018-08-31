@@ -28,14 +28,14 @@
         <Style TargetType="DockPanel">
             <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
         </Style>-->
-        <Style TargetType="Label" x:Key="ErrorMessageLabelStyle">
+        <!--<Style TargetType="Label" x:Key="ErrorMessageLabelStyle">
             <Setter Property="Foreground" Value="OrangeRed"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=ErrorMessage}" Value="{x:Null}">
                     <Setter Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
             </Style.Triggers>
-        </Style>
+        </Style>-->
         <!--<Style TargetType="DockPanel" x:Key="VisibleOnlyOn">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Value}" Value="{x:Null}">
@@ -126,7 +126,8 @@
                             <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
                         </DockPanel>
                         <CheckBox x:Name="Checkbox_IsNopCommerceProject" Content="Is NopCommerce Project" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False"/>
-                        <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}"/>
+                        <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" />
+                        <!-- IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}" -->
                         <!--Unchecked="Checkbox_Enable_Unchecked" Checked="Checkbox_Enable_Checked"-->
                     </DockPanel>
                     <!--<DockPanel Grid.Row="1" Margin="0,0,0,5" Visibility="Collapsed">
@@ -163,10 +164,10 @@
                             <Button x:Name="Button_cancelNewExtension" Grid.Column="1" Background="#FFE14A2F" Foreground="White" Click="Button_cancelNewExtension_Click">Cancel</Button>
                         </Grid>
                     </DockPanel>
-                    <ListView x:Name="ListView_ListedFileExtensions" Grid.Row="4" IsTextSearchEnabled="False"/>
+                    <ListView x:Name="ListView_WatchedFileExtensions" Grid.Row="4" IsTextSearchEnabled="False"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Overrides">
+            <!--<TabItem Header="Overrides">
                 <TabItem.ToolTip>
                     <ToolTip>
                         'Overrides' will change where files are copied to upon saving
@@ -235,7 +236,7 @@
                     </DockPanel>
                     <ListView x:Name="ListView_Overrides" Grid.Row="3" IsTextSearchEnabled="False"/>
                 </Grid>
-            </TabItem>
+            </TabItem>-->
             <TabItem Header="Log">
                 <Grid>
                     <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False"/>

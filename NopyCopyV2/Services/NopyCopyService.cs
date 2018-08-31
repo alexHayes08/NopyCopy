@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell.Settings;
 using NopyCopyV2.Modals;
+using NopyCopyV2.Modals.Extensions;
 using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ using System.Linq;
 using static Microsoft.VisualStudio.VSConstants;
 using static NopyCopyV2.Extensions.IVsSolutionExtensions;
 using static NopyCopyV2.Extensions.NopProjectExtensions;
+using NopyCopyConfiguration = NopyCopyV2.Modals.NopyCopyConfiguration;
 
 namespace NopyCopyV2
 {
@@ -24,9 +26,7 @@ namespace NopyCopyV2
         private readonly IServiceProvider serviceProvider;
 
         private bool isSolutionLoaded;
-        private bool isNopCommerceSolution;
         private bool isDebugging;
-        private IList<IObserver<NopyCopyConfiguration>> observers;
 
         /// <summary>
         /// The key is the project name, and the value is the plugins system 
@@ -40,6 +40,7 @@ namespace NopyCopyV2
         private readonly DebuggerEvents _debuggerEvents;
         private readonly DTE _dte;
         private readonly IVsSolution2 _solutionService;
+        private readonly IVsStatusbar _statusBar;
         //private readonly IVSDKHelperService _vsdkHelpers;
 
         // Cookies
@@ -60,25 +61,22 @@ namespace NopyCopyV2
 
         public NopyCopyService(IServiceProvider serviceProvider, OptionsPage options)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             this.serviceProvider = serviceProvider;
-
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-
             var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
             var runningDocumentTable = new RunningDocumentTable(ServiceProvider.GlobalProvider);
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
             var shellSettingsService = new ShellSettingsManager(ServiceProvider.GlobalProvider);
-
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            var statusBar = ServiceProvider.GlobalProvider.GetService(typeof(SVsStatusbar)) as IVsStatusbar;
 
             _debuggerEvents = dteService.Events.DebuggerEvents;
             _dte = dteService;
             _runningDocumentTable = runningDocumentTable;
             _solutionService = solutionService;
+            _statusBar = statusBar;
             IsDebugging = false;
             IsSolutionLoaded = false;
-            IsNopCommerceSolution = false;
-            observers = new List<IObserver<NopyCopyConfiguration>>();
             cacheManager = CacheFactory.Build(PROJECT_SYSTEMNAMES_CACHE_KEY, settings =>
             {
                 settings.WithSystemRuntimeCacheHandle(SYSTEM_RUNTIME_CACHE_KEY);
@@ -89,15 +87,10 @@ namespace NopyCopyV2
             {
                 // Check it the loaded solution is a nop commerce solution
                 IsSolutionLoaded = true;
-
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-                IsNopCommerceSolution = IsStandardNopProject(_solutionService as IVsSolution);
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             }
             else
             {
                 IsSolutionLoaded = false;
-                IsNopCommerceSolution = false;
             }
 
             // Listen for when debugging starts/ends
@@ -134,11 +127,11 @@ namespace NopyCopyV2
                 isSolutionLoaded = value;
                 OnNopCommerceSolutionEvent?.Invoke(this, new NopCommerceSolutionEvent
                 {
-                    IsNopCommerceSolution = isNopCommerceSolution,
                     SolutionLoaded = isSolutionLoaded
                 });
             }
         }
+
         public bool IsDebugging
         {
             get => isDebugging;
@@ -148,18 +141,6 @@ namespace NopyCopyV2
                 OnDebugEvent?.Invoke(this, new DebugEvent
                 {
                     IsDebugging = value
-                });
-            }
-        }
-        public bool IsNopCommerceSolution
-        {
-            get => isNopCommerceSolution;
-            private set
-            {
-                OnNopCommerceSolutionEvent?.Invoke(this, new NopCommerceSolutionEvent
-                {
-                    IsNopCommerceSolution = value,
-                    SolutionLoaded = true
                 });
             }
         }
@@ -204,7 +185,7 @@ namespace NopyCopyV2
             if (!Configuration.IsEnabled || !IsDebugging)
                 return S_OK;
 
-            if (IsNopCommerceSolution && ShouldCopy(document.FullName))
+            if (ShouldCopy(document))
             {
                 // Fetch the plugin name and it's corresponding system name
                 var pluginName = document.ProjectItem.ContainingProject.Name;
@@ -221,7 +202,10 @@ namespace NopyCopyV2
                 });
 
                 // Get the path to copy the file to
-                var copyingTo = GetFilesCorrespondingWebPluginPath(document.FullName, pluginName, systemName);
+                var copyingTo = GetFilesCorrespondingWebPluginPath(
+                    document.FullName,
+                    pluginName,
+                    systemName);
 
                 // Copy the file & emit the event
                 File.Copy(document.FullName, copyingTo, true);
@@ -230,6 +214,7 @@ namespace NopyCopyV2
                     SavedFile = new FileInfo(document.FullName),
                     CopiedTo = new FileInfo(copyingTo)
                 });
+                PrintToStatusBar($"Copied file from:'{document.FullName}' to:'{copyingTo}'");
             }
 
             return S_OK;
@@ -262,13 +247,11 @@ namespace NopyCopyV2
 
         public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)
         {
-            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
             return S_OK;
         }
 
         public int OnBeforeCloseProject(IVsHierarchy pHierarchy, int fRemoved)
         {
-            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
             return S_OK;
         }
 
@@ -294,32 +277,6 @@ namespace NopyCopyV2
         public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
             IsSolutionLoaded = true;
-            IsNopCommerceSolution = IsStandardNopProject(_solutionService);
-
-            //var projects = _solutionService.GetProjects();
-            //foreach (var project in projects)
-            //{
-                //// Get the Plugins folder
-                //if (project.Name.ToLower() == "plugins")
-                //{
-                //    var fullName = project.FullName;
-
-                //    // Get all projects in this folder
-                //    foreach (ProjectItem pluginProject in project.ProjectItems)
-                //    {
-                //        // Check if the project is a plugin
-                //        if (pluginProject.TryGetSystemNameOfProjectItem(
-                //            out string systemName))
-                //        {
-                //            if (!projectRootFolders.ContainsKey(project.Name))
-                //            {
-                //                projectRootFolders.Add(project.Name, systemName);
-                //            }
-                //        }
-                //    }
-                //}
-            //}
-
             return S_OK;
         }
 
@@ -361,9 +318,7 @@ namespace NopyCopyV2
 
             // If the solution is a NopCommerceSolution then begin listening 
             // for file changes
-            isNopCommerceSolution = IsStandardNopProject(_solutionService);
-            if (isNopCommerceSolution)
-                AdviseRunningDocumentEvents();
+            AdviseRunningDocumentEvents();
         }
 
         private void _debuggerEvents_OnEnterDesignMode(dbgEventReason Reason)
@@ -378,6 +333,22 @@ namespace NopyCopyV2
         #endregion
 
         #endregion
+
+        /// <summary>
+        /// Instead of calling the SetText(...) directly on the _statusBar
+        /// service call this instead to avoid freeze related errors.
+        /// </summary>
+        /// <param name="message"></param>
+        private void PrintToStatusBar(string message)
+        {
+            _statusBar.IsFrozen(out int frozen);
+            if (frozen != 0)
+            {
+                _statusBar.FreezeOutput(0);
+            }
+
+            _statusBar.SetText(message);
+        }
 
         private void AdviseSolutionEvents()
         {
@@ -455,7 +426,7 @@ namespace NopyCopyV2
 
             foreach (ProjectItem item in plugin.ProjectItems)
             {
-                if (Configuration.ListedFileExtensions.Contains(
+                if (Configuration.GetWatchedFileExensions().Contains(
                     Path.GetExtension(item.Name)))
                 {
                     whiteListedItems.Add(item);
@@ -465,21 +436,30 @@ namespace NopyCopyV2
             return whiteListedItems;
         }
 
-        private bool ShouldCopy(string path)
+        private bool ShouldCopy(Document document)
         {
-            var ext = Path.GetExtension(path);
+            ThreadHelper.ThrowIfNotOnUIThread();
 
+            var result = false;
+            var ext = Path.GetExtension(document.FullName);
+
+            // Check extension
             if (string.IsNullOrEmpty(ext))
             {
                 return false;
             }
 
-            var containsExtension = Configuration.ListedFileExtensions.Contains(ext);
+            var containsExtension = Configuration
+                .GetWatchedFileExensions()
+                .Contains(ext) && Configuration.IsWhiteList;
 
-            if (Configuration.IsWhiteList)
-                return containsExtension;
-            else
-                return !containsExtension;
+            // Check if 'CopyToOutput' is valid.
+            var project = document.ProjectItem.ContainingProject;
+            _solutionService.GetProjectOfUniqueName(project.UniqueName,
+                out IVsHierarchy hierarchy);
+            result = IsItemCopiedToOutput(project, document.ProjectItem);
+
+            return result;
         }
 
         private Document FindDocument(uint documentCookie)

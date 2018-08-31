@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
-using System;
 
 namespace NopyCopyV2.Services
 {
@@ -18,7 +17,6 @@ namespace NopyCopyV2.Services
     {
         bool IsSolutionLoaded { get; }
         bool IsDebugging { get; }
-        bool IsNopCommerceSolution { get; }
         string SolutionName { get; }
         NopyCopyConfiguration Configuration { get; set; }
     }

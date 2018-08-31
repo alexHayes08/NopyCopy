@@ -1,8 +1,10 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using NopyCopyV2.Modals;
+using NopyCopyV2.Xaml;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace NopyCopyV2
 {
@@ -12,6 +14,7 @@ namespace NopyCopyV2
         #region Fields
 
         public const string CATEGORY_NAME = "NopyCopy";
+        //private System.Windows.Controls.UserControl window;
 
         #endregion
 
@@ -19,7 +22,7 @@ namespace NopyCopyV2
 
         public OptionsPage()
         {
-            ListedFileExtensions = new List<string>();
+            //ListedFileExtensions = new List<string>();
         }
 
         #endregion
@@ -39,10 +42,27 @@ namespace NopyCopyV2
         public bool IsWhiteList { get; set; }
 
         [Category(CATEGORY_NAME)]
-        public IList<string> ListedFileExtensions { get; set; }
+        [DisplayName("Watched file extensions")]
+        public string WatchedFileExtensions { get; set; }
 
-        [Category(CATEGORY_NAME)]
-        public IList<Override> Overrides { get; set; }
+        //[Category(CATEGORY_NAME)]
+        //public IList<string> ListedFileExtensions { get; set; }
+
+        //[Category(CATEGORY_NAME)]
+        //public IList<Override> Overrides { get; set; }
+
+        //protected override IWin32Window Window
+        //{
+        //    get
+        //    {
+        //        if (window == null)
+        //        {
+        //            window = new OptionsControl();
+        //        }
+
+        //        return window.
+        //    }
+        //}
 
         #endregion
     }

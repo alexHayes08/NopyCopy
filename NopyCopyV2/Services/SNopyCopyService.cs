@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NopyCopyV2.Services
+﻿namespace NopyCopyV2.Services
 {
 #pragma warning disable IDE1006 // Naming Styles
     /// <summary>

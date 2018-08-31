@@ -88,12 +88,11 @@ namespace NopyCopyV2
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             // Detach event handlers
-
             if (_vsShell != null && shellPropertyChangedCookie != 0)
                 _vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
+
+            base.Dispose(disposing);
         }
 
         #region Package Members

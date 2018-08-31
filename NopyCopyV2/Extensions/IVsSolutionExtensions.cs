@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,8 @@ namespace NopyCopyV2.Extensions
 
         private static IEnumerable<IVsHierarchy> GetProjectsInSolution(IVsSolution solution, __VSENUMPROJFLAGS flags)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             if (solution == null)
                 yield break;
 
@@ -47,6 +50,8 @@ namespace NopyCopyV2.Extensions
 
         private static EnvDTE.Project GetDTEProject(this IVsHierarchy hierarchy)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             if (hierarchy == null)
                 throw new ArgumentNullException("hierarchy");
 

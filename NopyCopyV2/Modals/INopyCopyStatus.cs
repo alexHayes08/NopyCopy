@@ -2,7 +2,6 @@
 {
     public interface INopyCopyStatus
     {
-        bool IsNopCommerceSolution { get; }
         bool SolutionLoaded { get; }
         bool IsDebugging { get; }
         string SolutionName { get; }

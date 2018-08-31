@@ -7,25 +7,25 @@ namespace NopyCopyV2.Modals
     {
         public ConfigUpdatedEvent(bool isEnabled, 
             bool isWhiteList, 
-            IList<string> listedFileExtensions,
-            IList<Override> overrides)
+            string watchedFileExtensions
+            /*IList<Override> overrides*/)
         {
             IsEnabled = isEnabled;
             IsWhiteList = isWhiteList;
-            ListedFileExtensions = listedFileExtensions;
-            Overrides = overrides;
+            WatchedFileExtensions = watchedFileExtensions;
+            //Overrides = overrides;
         }
 
         public ConfigUpdatedEvent(INopyCopyConfiguration configuration)
         {
             IsEnabled = configuration.IsEnabled;
             IsWhiteList = configuration.IsWhiteList;
-            ListedFileExtensions = configuration.ListedFileExtensions;
+            WatchedFileExtensions = configuration.WatchedFileExtensions;
         }
 
         public bool IsEnabled { get; private set; }
         public bool IsWhiteList { get; private set; }
-        public IList<string> ListedFileExtensions { get; private set; }
-        public IList<Override> Overrides { get; private set; }
+        public string WatchedFileExtensions { get; private set; }
+        //public IList<Override> Overrides { get; private set; }
     }
 }
