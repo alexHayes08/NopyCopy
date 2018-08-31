@@ -210,13 +210,12 @@ namespace NopyCopyV2.Services
         /// <returns></returns>
         private string GetSolutionFileName()
         {
-            string solutionDirectory;
-            string solutionFile;
-            string solutionUserOptions;
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             if (_solutionService.GetSolutionInfo(
-                out solutionDirectory, 
-                out solutionFile, 
-                out solutionUserOptions) == S_OK)
+                out string solutionDirectory,
+                out string solutionFile,
+                out string solutionUserOptions) == S_OK)
             {
                 return solutionFile;
             }
