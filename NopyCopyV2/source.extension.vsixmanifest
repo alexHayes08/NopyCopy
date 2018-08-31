@@ -3,7 +3,10 @@
   <Metadata>
     <Identity Id="NopyCopyV2.f6878460-74c3-491b-b422-e8be8831836d" Version="1.0" Language="en-US" Publisher="Alexander Hayes" />
     <DisplayName>NopyCopyV2</DisplayName>
-    <Description>Empty VSIX Project.</Description>
+    <Description>
+      Extension for copying files to the output directory (while debugging)
+      upon saving file.
+    </Description>
   </Metadata>
   <Installation>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0]" />

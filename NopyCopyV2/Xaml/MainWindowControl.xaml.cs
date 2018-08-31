@@ -3,12 +3,10 @@ using NopyCopyV2.Modals;
 using NopyCopyV2.Modals.Extensions;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using NopyCopyConfiguration = NopyCopyV2.Modals.NopyCopyConfiguration;
 
 namespace NopyCopyV2.Xaml
 {
@@ -25,8 +23,10 @@ namespace NopyCopyV2.Xaml
             "If checked then when debugging, modifying and saving files " +
             "(such as views) will be copied to their corresponding ouput " +
             "plugin directory.";
+
         private NopyCopyService nopyCopyService;
-        private bool attachedHandlers = false;
+        private bool attachedHandlers;
+        private IDisposable observerRef;
 
         #endregion
 
@@ -37,7 +37,10 @@ namespace NopyCopyV2.Xaml
         /// </summary>
         public MainWindowControl()
         {
+            // Init component first.
             InitializeComponent();
+
+            attachedHandlers = false;
             Logs = new List<string>();
             ListView_Log.ItemsSource = Logs;
 
@@ -60,33 +63,51 @@ namespace NopyCopyV2.Xaml
 
         #region Properties
 
-        public bool LoadedService { get; set; }
         public IList<string> Logs { get; private set; }
+
         public string ErrorMessage { get; set; }
+
         public NopyCopyService NopyCopyService
         {
-            get
-            {
-                return nopyCopyService;
-            }
+            get => nopyCopyService;
             set
             {
                 DetachEventHanlders();
                 nopyCopyService = value;
                 AttachEventHandlers();
-            }
-        }
-        public IVsUIShell5 ColorService { get; set; }
-        public string SolutionName
-        {
-            get
-            {
-                if (NopyCopyService != null && !string.IsNullOrEmpty(NopyCopyService.SolutionName))
-                    return NopyCopyService.SolutionName;
+
+                if (value != null)
+                {
+                    Checkbox_Enable.IsEnabled = true;
+                    Checkbox_EnableFileExtensions.IsEnabled = true;
+                    Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
+                    Checkbox_EnableFileExtensions.IsChecked = nopyCopyService.Configuration.EnableFileExtensions;
+
+                    if (nopyCopyService.IsSolutionLoaded)
+                    {
+                        Label_SolutionNameLabel.Content = nopyCopyService.SolutionName;
+                        Label_SolutionNameLabel.Visibility = Visibility.Visible;
+                        Label_NoSolutionLoadedMessage.Visibility = Visibility.Collapsed;
+                    }
+
+                    if (nopyCopyService.Configuration.EnableFileExtensions)
+                    {
+                        ListView_WatchedFileExtensions.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        ListView_WatchedFileExtensions.Visibility = Visibility.Collapsed;
+                    }
+                }
                 else
-                    return DEFAULT_SOLUTION_NAME_PLACEHOLDER;
+                {
+                    Checkbox_Enable.IsEnabled = false;
+                    Checkbox_EnableFileExtensions.IsEnabled = false;
+                }
             }
         }
+
+        public IVsUIShell5 ColorService { get; set; }
 
         #endregion
 
@@ -165,15 +186,27 @@ namespace NopyCopyV2.Xaml
             }
         }
 
-        //private void Checkbox_Enable_Checked(object sender, RoutedEventArgs e)
-        //{
-        //    nopyCopyService.Configuration.IsEnabled = true;
-        //}
+        private void Checkbox_Enable_Checked(object sender, RoutedEventArgs e)
+        {
+            nopyCopyService.Configuration.IsEnabled = true;
+        }
 
-        //private void Checkbox_Enable_Unchecked(object sender, RoutedEventArgs e)
-        //{
-        //    nopyCopyService.Configuration.IsEnabled = false;
-        //}
+        private void Checkbox_Enable_Unchecked(object sender, RoutedEventArgs e)
+        {
+            nopyCopyService.Configuration.IsEnabled = false;
+        }
+
+        private void Checkbox_EnableFileExtensions_Checked(object sender, RoutedEventArgs e)
+        {
+            nopyCopyService.Configuration.EnableFileExtensions = true;
+            ListView_WatchedFileExtensions.Visibility = Visibility.Visible;
+        }
+
+        private void Checkbox_EnableFileExtensions_Unchecked(object sender, RoutedEventArgs e)
+        {
+            nopyCopyService.Configuration.EnableFileExtensions = false;
+            ListView_WatchedFileExtensions.Visibility = Visibility.Collapsed;
+        }
 
         private void DebugEventHandler(object sender, DebugEvent e)
         {
@@ -206,53 +239,33 @@ namespace NopyCopyV2.Xaml
             }
         }
 
-        private void ConfigurationUpdatedHandler(object sender, PropertyChangedEventArgs e)
-        {
-            switch (e.PropertyName)
-            {
-                case nameof(nopyCopyService.Configuration.IsEnabled):
-                    Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
-
-                    if (Checkbox_Enable.IsChecked ?? false)
-                    {
-                        Checkbox_Enable.ToolTip = CHECKBOX_ENABLE_TOOLTIP_ENABLED_MESSAGE;
-                        Logs.Add("Enabled plugin");
-                    }
-                    else
-                    {
-                        Checkbox_Enable.ToolTip = DEFAULT_SOLUTION_NAME_PLACEHOLDER;
-                        Logs.Add("Disabled plugin");
-                    }
-
-                    break;
-                case nameof(nopyCopyService.Configuration.IsWhiteList):
-                    // TODO
-                    break;
-                case nameof(nopyCopyService.Configuration.WatchedFileExtensions):
-                    // TODO
-                    break;
-            }
-        }
-
         private void NopCommerceSolutionEventHandler(object sender, NopCommerceSolutionEvent e)
         {
-            Checkbox_IsNopCommerceProject.IsChecked = e.SolutionLoaded;
-
             if (e.SolutionLoaded)
             {
-                Checkbox_Enable.IsEnabled = true;
+                Label_NoSolutionLoadedMessage.Visibility = Visibility.Collapsed;
+                Label_SolutionNameLabel.Visibility = Visibility.Visible;
+                Label_SolutionNameLabel.Content = e.SolutionName;
                 Logs.Add("NopCommerce solution loaded");
             }
             else
             {
-                Checkbox_Enable.IsEnabled = false;
+                Label_NoSolutionLoadedMessage.Visibility = Visibility.Visible;
+                Label_SolutionNameLabel.Visibility = Visibility.Collapsed;
                 Logs.Add("The solution was unloaded");
             }
         }
 
         private void FileSavedEventHandler(object sender, FileSavedEvent e)
         {
-            Logs.Add("Saved and copied " + e.SavedFile.Name + " to " + e.CopiedTo.FullName);
+            if (e.CopiedTo == null)
+            {
+                Logs.Add($"Didn't copy {e.SavedFile}.");
+            }
+            else
+            {
+                Logs.Add($"Saved and copied {e.SavedFile.Name} to {e.CopiedTo.FullName}.");
+            }
         }
 
         #endregion
@@ -271,10 +284,10 @@ namespace NopyCopyV2.Xaml
             //}
         }
 
+        // TODO
         public void UpdateColors()
         {
-            // TODO
-            Logs.Add("UpdateColors is still a WIP");
+            //Logs.Add("UpdateColors is still a WIP");
         }
 
         private void AttachEventHandlers()
@@ -282,8 +295,8 @@ namespace NopyCopyV2.Xaml
             if (nopyCopyService == null || attachedHandlers)
                 return;
 
+            observerRef = nopyCopyService.Configuration.Subscribe(this);
             nopyCopyService.OnDebugEvent += DebugEventHandler;
-            nopyCopyService.Configuration.PropertyChanged += ConfigurationUpdatedHandler;
             nopyCopyService.OnNopCommerceSolutionEvent += NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent += FileSavedEventHandler;
 
@@ -293,8 +306,6 @@ namespace NopyCopyV2.Xaml
                 .Configuration
                 .GetWatchedFileExensions();
             Checkbox_Enable.IsChecked = nopyCopyService.Configuration.IsEnabled;
-            //RadioButton_ListedFileExtnesions_IsWhiteList.IsChecked = nopyCopyService.Configuration.IsWhiteList;
-            //RadioButton_ListedFileExtnesions_IsBlackList.IsChecked = !nopyCopyService.Configuration.IsWhiteList;
         }
 
         private void DetachEventHanlders()
@@ -302,8 +313,8 @@ namespace NopyCopyV2.Xaml
             if (nopyCopyService == null || !attachedHandlers)
                 return;
 
+            observerRef.Dispose();
             nopyCopyService.OnDebugEvent -= DebugEventHandler;
-            nopyCopyService.Configuration.PropertyChanged -= ConfigurationUpdatedHandler;
             nopyCopyService.OnNopCommerceSolutionEvent -= NopCommerceSolutionEventHandler;
             nopyCopyService.OnFileSavedEvent -= FileSavedEventHandler;
 
@@ -326,6 +337,16 @@ namespace NopyCopyV2.Xaml
                 .GetWatchedFileExensions();
 
             Checkbox_Enable.IsChecked = value.IsEnabled;
+            Checkbox_EnableFileExtensions.IsChecked = value.EnableFileExtensions;
+
+            if (value.EnableFileExtensions)
+            {
+                ListView_WatchedFileExtensions.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ListView_WatchedFileExtensions.Visibility = Visibility.Collapsed;
+            }
         }
 
         #endregion

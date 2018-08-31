@@ -10,7 +10,9 @@ using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2.Services
 {
-    public class VSDKHelperService : Package, SVSDKHelperService, IVSDKHelperService
+    public class VSDKHelperService : Package,
+        SVSDKHelperService,
+        IVSDKHelperService
     {
         #region Fields
 
@@ -130,6 +132,7 @@ namespace NopyCopyV2.Services
         /// <returns></returns>
         private IList<string> GetNodeFiles(IVsHierarchy hier, uint itemId)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             IVsSccProject2 pscp2 = hier as IVsSccProject2;
             return GetNodeFiles(pscp2, itemId);
         }
@@ -142,6 +145,8 @@ namespace NopyCopyV2.Services
         /// <returns></returns>
         private IList<string> GetNodeFiles(IVsSccProject2 pscp2, uint itemId)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             // NOTE: the function returns only a list of files, containing both regular files and special files
             // If you want to hide the special files (similar with solution explorer), you may need to return 
             // the special files in a hastable (key=master_file, values=special_file_list)
@@ -208,15 +213,14 @@ namespace NopyCopyV2.Services
         /// Returns the filename of the solution.
         /// </summary>
         /// <returns></returns>
-        private string GetSolutionFileName()
+        public string GetSolutionFileName()
         {
-            string solutionDirectory;
-            string solutionFile;
-            string solutionUserOptions;
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             if (_solutionService.GetSolutionInfo(
-                out solutionDirectory, 
-                out solutionFile, 
-                out solutionUserOptions) == S_OK)
+                out string solutionDirectory,
+                out string solutionFile,
+                out string solutionUserOptions) == S_OK)
             {
                 return solutionFile;
             }
@@ -233,6 +237,8 @@ namespace NopyCopyV2.Services
         /// <returns></returns>
         private string GetProjectFileName(IVsSccProject2 pscp2Project)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             // Note: Solution folders return currently a name like 
             // "NewFolder1{1DBFFC2F-6E27-465A-A16A-1AECEA0B2F7E}.storage"
             //
@@ -264,8 +270,7 @@ namespace NopyCopyV2.Services
             }
 
             // If that fails, attempt to get the filename from the solution
-            string uniqueName;
-            if (_solutionService.GetUniqueNameOfProject(hierProject, out uniqueName) == S_OK
+            if (_solutionService.GetUniqueNameOfProject(hierProject, out string uniqueName) == S_OK
                 && uniqueName != null && uniqueName.Length > 0)
             {
                 return uniqueName;
@@ -280,24 +285,6 @@ namespace NopyCopyV2.Services
 
             // If everything failed return null
             return null;
-        }
-
-        string IVSDKHelperService.GetSolutionFileName()
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            if (GetGlobalService(typeof(SVsSolution)) is IVsSolution solution)
-            {
-                solution.GetSolutionInfo(out string solutionDir,
-                    out string solutionFile,
-                    out string userOptsFile);
-
-                return null;
-            }
-            else
-            {
-                throw new Exception();
-            }
         }
 
         public IEnumerable<Project> GetProjectsInSolution(bool includeNestedProjects)

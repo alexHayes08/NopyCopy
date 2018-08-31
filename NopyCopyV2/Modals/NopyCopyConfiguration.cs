@@ -1,7 +1,5 @@
-﻿using NopyCopyV2.Modals.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace NopyCopyV2.Modals
 {
@@ -11,8 +9,6 @@ namespace NopyCopyV2.Modals
         #region Fields
 
         private IList<IObserver<INopyCopyConfiguration>> observers;
-
-        private ObservableCollection<string> watchedFileExtensions;
 
         // Reference to the options page
         private readonly OptionsPage optionsPage;
@@ -45,14 +41,28 @@ namespace NopyCopyV2.Modals
             }
 
             optionsPage.SaveSettingsToStorage();
-
-            watchedFileExtensions = new ObservableCollection<string>(options
-                .GetWatchedFileExensions());
         }
 
         #endregion
 
         #region Properties
+
+        /// <summary>
+        /// Whether to use the 'WatchedFileExtensions' property when deciding
+        /// whether or not to copy a file.
+        /// </summary>
+        public bool EnableFileExtensions
+        {
+            get => optionsPage.EnableFileExtensions;
+            set
+            {
+                if (value != optionsPage.EnableFileExtensions)
+                {
+                    optionsPage.EnableFileExtensions = value;
+                    OnChange();
+                }
+            }
+        }
 
         /// <summary>
         /// Retrieves a semi-colon(;) seperated list of file extensions

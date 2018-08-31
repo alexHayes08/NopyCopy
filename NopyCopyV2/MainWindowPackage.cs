@@ -125,9 +125,9 @@ namespace NopyCopyV2
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var serviceContainer = this as IServiceContainer;
 
-            ServiceCreatorCallback vsdkHelperCallback = new
-                ServiceCreatorCallback(CreateServiceVSDKHelperService);
-            serviceContainer.AddService(typeof(SVSDKHelperService), vsdkHelperCallback);
+            //ServiceCreatorCallback vsdkHelperCallback = new
+            //    ServiceCreatorCallback(CreateServiceVSDKHelperService);
+            //serviceContainer.AddService(typeof(SVSDKHelperService), vsdkHelperCallback);
 
             ServiceCreatorCallback nopyCopyCallback =
                 new ServiceCreatorCallback(CreateServiceNopyCopyService);
@@ -178,7 +178,6 @@ namespace NopyCopyV2
 
         public int OnShellPropertyChange(int propid, object var)
         {
-            toolWindow.Logs.Add("OnShellPropertyChange " + propid);
             return S_OK;
         }
 

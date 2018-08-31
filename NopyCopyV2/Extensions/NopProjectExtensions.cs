@@ -137,7 +137,8 @@ namespace NopyCopyV2.Extensions
         }
 
         /// <summary>
-        /// 
+        ///     Tries to get the 'SystemName' property from the description.txt
+        ///     file.
         /// </summary>
         /// <param name="document"></param>
         /// <param name="systemName"></param>
@@ -254,8 +255,8 @@ namespace NopyCopyV2.Extensions
         }
 
         /// <summary>
-        /// Warning: If the plugin has an invalid Description.txt then
-        /// systemName will be set to null.
+        ///     Warning: If the plugin has an invalid Description.txt then
+        ///     systemName will be set to null.
         /// </summary>
         /// <param name="project"></param>
         /// <param name="systemName"></param>
@@ -291,24 +292,26 @@ namespace NopyCopyV2.Extensions
         }
 
         /// <summary>
-        /// WIP: Update summary
-        /// FIXME: This function doesn't work, need to pass in the output 
-        /// projectName name as well!
-        /// Gets the output path of a file.
+        ///     WIP: Update summary
+        ///     FIXME: This function doesn't work, need to pass in the output 
+        ///     projectName name as well!
+        ///     Gets the output path of a file.
         /// </summary>
         /// <param name="fullFilePath"></param>
         /// <param name="projectName">
-        /// This is just the name of the output project folder found in the descriptions folder.
+        ///     This is just the name of the output project folder found in the
+        ///     descriptions folder.
         /// </param>
         /// <returns></returns>
         /// <exception cref="FileNotFoundException">
-        /// When the fullFilePath points to a non-existant file.
+        ///     When the fullFilePath points to a non-existant file.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the fullFilePath doesn't contain either the projectName
-        /// or a folder named 'plugins' (case insensitive).
+        ///     Thrown when the fullFilePath doesn't contain either the
+        ///     projectName or a folder named 'plugins' (case insensitive).
         /// </exception>
-        public static string GetFilesCorrespondingWebPluginPath(string fullFilePath, 
+        public static string GetFilesCorrespondingWebPluginPath(
+            string fullFilePath, 
             string projectName, 
             string projectSystemName)
         {
@@ -342,18 +345,22 @@ namespace NopyCopyV2.Extensions
         }
 
         /// <summary>
-        /// Retrieves the path where output files are put when building. This
-        /// will reflect the active solution configuration (debug/release).
+        ///     Retrieves the path where output files are put when building. This
+        ///     will reflect the active solution configuration (debug/release).
         /// </summary>
         /// <param name="project"></param>
         /// <param name="outputPath"></param>
         /// <returns></returns>
         public static bool TryGetOutputPath(this Project project, out string outputPath)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
             try
             {
-                var fullPath = project.Properties.Item("FullPath").Value.ToString();
-                var outputDir = project.ConfigurationManager.ActiveConfiguration.Properties.Item("OutputPath").Value.ToString();
+                project.Properties.TryGetProperty("FullPath",
+                    out string fullPath);
+                project.ConfigurationManager.ActiveConfiguration.Properties
+                    .TryGetProperty("OutputPath", out string outputDir);
 
                 outputPath = Path.Combine(fullPath, outputDir);
                 return true;
@@ -365,45 +372,81 @@ namespace NopyCopyV2.Extensions
             }
         }
 
+        public static bool TryGetProperty<T>(this EnvDTE.Properties properties,
+            string propertyName,
+            out T value)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            value = default(T);
+            var foundProperty = false;
+
+            for (var i = 1; i < properties.Count; i++)
+            {
+                try
+                {
+                    Property p = properties.Item(i);
+                    if (0 == String.Compare(p.Name,
+                        propertyName,
+                        StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (p.Value is T casted)
+                        {
+                            foundProperty = true;
+                            value = casted;
+                        }
+
+                        break;
+                    }
+                }
+                catch
+                { }
+            }
+
+            return foundProperty;
+        }
+
+        public static Dictionary<string, object> CastToDictionary(this EnvDTE.Properties properties)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var dictionary = new Dictionary<string, object>();
+
+            // Properties is not 0-based, it starts at 1.
+            for (int i = 1; i < properties.Count; i++)
+            {
+                try
+                {
+                    Property prop = properties.Item(i);
+                    dictionary[prop.Name] = prop.Value;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+
+            return dictionary;
+        }
+
         /// <summary>
-        /// Checks if an item has the property 'CopyToOutput' is to 'Always' or
-        /// 'PreserveNewest'. Returns false if not set or set to 'Never'.
+        ///     Checks if an item has the property 'CopyToOutput' is to 'Always' or
+        ///     'PreserveNewest'. Returns false if not set or set to 'Never'.
         /// </summary>
         /// <param name="project"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        public static bool IsItemCopiedToOutput(Project project, ProjectItem item)
+        public static bool IsItemCopiedToOutput(ProjectItem item)
         {
-            var dictionary = new Dictionary<string, object>();
-            foreach (Property p in item.Properties)
-            {
-                dictionary[p.Name] = p.Value;
-            }
-
             ThreadHelper.ThrowIfNotOnUIThread();
-            var result = false;
-
-            ((IVsSolution)Package.GetGlobalService(typeof(SVsSolution)))
-                .GetProjectOfUniqueName(project.UniqueName, out IVsHierarchy hierarchy);
-
-            if (hierarchy is IVsBuildPropertyStorage buildPropertyStorage)
+            if (item.Properties.TryGetProperty("CopyToOutputDirectory",
+                out uint value))
             {
-                var fullPath = (string)item.Properties.Item("FullPath").Value;
-                hierarchy.ParseCanonicalName(fullPath, out uint itemId);
-
-                if (VSConstants.S_OK == buildPropertyStorage.GetItemAttribute(itemId, fullPath, out string value))
-                {
-                    result = 0 != string.Compare(value,
-                        "Never",
-                        StringComparison.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    result = false;
-                }
+                return value != 0;
             }
-
-            return result;
+            else
+            {
+                return false;
+            }
         }
     }
 }

@@ -1,18 +1,6 @@
 ﻿using NopyCopyV2.Modals;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace NopyCopyV2.Xaml
 {
@@ -33,7 +21,7 @@ namespace NopyCopyV2.Xaml
         #region Properties
 
         public bool IsWhiteList { get; set; }
-        //public IList<string> ListedFileExtensions { get; set; }
+        public bool EnableFileExtensions { get; set; }
         public IList<Override> Overrides { get; set; }
         public string WatchedFileExtensions { get; set; }
 

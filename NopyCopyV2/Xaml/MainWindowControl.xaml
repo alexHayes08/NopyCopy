@@ -125,8 +125,24 @@
                             <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Visibility="Collapsed"/>
                             <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
                         </DockPanel>
-                        <CheckBox x:Name="Checkbox_IsNopCommerceProject" Content="Is NopCommerce Project" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False"/>
-                        <CheckBox x:Name="Checkbox_Enable" Content="Enable" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Top" DockPanel.Dock="Top" IsEnabled="False" />
+                        <CheckBox x:Name="Checkbox_Enable"
+                                  Content="Enable (copy files on save)"
+                                  HorizontalAlignment="Left"
+                                  Margin="10"
+                                  VerticalAlignment="Top"
+                                  DockPanel.Dock="Top"
+                                  IsEnabled="False"
+                                  Unchecked="Checkbox_Enable_Unchecked" 
+                                  Checked="Checkbox_Enable_Checked"/>
+                        <CheckBox x:Name="Checkbox_EnableFileExtensions"
+                                  Content="Enable filtering by file extensions"
+                                  HorizontalAlignment="Left"
+                                  Margin="10"
+                                  VerticalAlignment="Top"
+                                  DockPanel.Dock="Top"
+                                  IsEnabled="False"
+                                  Unchecked="Checkbox_EnableFileExtensions_Unchecked"
+                                  Checked="Checkbox_EnableFileExtensions_Checked"/>
                         <!-- IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}" -->
                         <!--Unchecked="Checkbox_Enable_Unchecked" Checked="Checkbox_Enable_Checked"-->
                     </DockPanel>
@@ -135,21 +151,43 @@
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                     </DockPanel>-->
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="2" x:Name="Grid_AddFileExtensions"
+                          Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel x:Name="StackPanel_AddAndDeleteFileExtBtnsContainer" Orientation="Horizontal" Grid.Column="1">
-                            <Button x:Name="Button_AddItem" Content="Add Item" Width="Auto" Padding="5" Margin="5" Click="Button_AddItem_Click" ToolTip="Add an item to the list of tracked file extensions."/>
-                            <Button x:Name="Button_DeleteItems" Content="Delete Item(s)" Width="Auto" Padding="5" Margin="5" Click="Button_DeleteItems_Click" ToolTip="Remove all selected items from the list of tracked filed extensions."/>
+                        <StackPanel x:Name="StackPanel_AddAndDeleteFileExtBtnsContainer"
+                                    Orientation="Horizontal"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed">
+                            <Button x:Name="Button_AddItem"
+                                    Content="Add Item"
+                                    Width="Auto"
+                                    Padding="5"
+                                    Margin="5"
+                                    Click="Button_AddItem_Click"
+                                    ToolTip="Add an item to the list of tracked file extensions."/>
+                            <Button x:Name="Button_DeleteItems"
+                                    Content="Delete Item(s)"
+                                    Width="Auto"
+                                    Padding="5"
+                                    Margin="5"
+                                    Click="Button_DeleteItems_Click"
+                                    ToolTip="Remove all selected items from the list of tracked filed extensions."/>
                         </StackPanel>
                     </Grid>
-                    <DockPanel x:Name="DockPanel_NewExtensionContainer"  Grid.Row="3" Visibility="Collapsed">
+                    <DockPanel x:Name="DockPanel_NewExtensionContainer"
+                               Grid.Row="3"
+                               Visibility="Collapsed">
                         <DockPanel DockPanel.Dock="Top">
-                            <Label x:Name="Label_newExtension">Enter New Extension:</Label>
-                            <TextBox x:Name="TextBox_newExtension" Margin="4" AutoWordSelection="False">
+                            <Label x:Name="Label_newExtension">
+                                Enter New Extension:
+                            </Label>
+                            <TextBox x:Name="TextBox_newExtension"
+                                     Margin="4"
+                                     AutoWordSelection="False">
                                 <TextBox.ToolTip>
                                     IE: .js, .json, .html, etc...
                                 </TextBox.ToolTip>
@@ -160,11 +198,25 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Button x:Name="Button_confirmNewExtension" Background="#FF40A63A" Foreground="White" Click="Button_confirmNewExtension_Click">Confirm</Button>
-                            <Button x:Name="Button_cancelNewExtension" Grid.Column="1" Background="#FFE14A2F" Foreground="White" Click="Button_cancelNewExtension_Click">Cancel</Button>
+                            <Button x:Name="Button_confirmNewExtension"
+                                    Background="#FF40A63A"
+                                    Foreground="White"
+                                    Click="Button_confirmNewExtension_Click">
+                                Confirm
+                            </Button>
+                            <Button x:Name="Button_cancelNewExtension"
+                                    Grid.Column="1"
+                                    Background="#FFE14A2F"
+                                    Foreground="White"
+                                    Click="Button_cancelNewExtension_Click">
+                                Cancel
+                            </Button>
                         </Grid>
                     </DockPanel>
-                    <ListView x:Name="ListView_WatchedFileExtensions" Grid.Row="4" IsTextSearchEnabled="False"/>
+                    <ListView x:Name="ListView_WatchedFileExtensions"
+                              Grid.Row="4"
+                              IsTextSearchEnabled="False"
+                              Visibility="Collapsed"/>
                 </Grid>
             </TabItem>
             <!--<TabItem Header="Overrides">

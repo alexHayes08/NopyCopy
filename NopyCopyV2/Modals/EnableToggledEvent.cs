@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace NopyCopyV2.Modals
 {
     public class ConfigUpdatedEvent : EventArgs, INopyCopyConfiguration
     {
-        public ConfigUpdatedEvent(bool isEnabled, 
+        public ConfigUpdatedEvent(bool isEnabled,
+            bool enableFileExtensions,
             bool isWhiteList, 
-            string watchedFileExtensions
-            /*IList<Override> overrides*/)
+            string watchedFileExtensions)
         {
             IsEnabled = isEnabled;
             IsWhiteList = isWhiteList;
             WatchedFileExtensions = watchedFileExtensions;
-            //Overrides = overrides;
         }
 
         public ConfigUpdatedEvent(INopyCopyConfiguration configuration)
@@ -24,8 +22,8 @@ namespace NopyCopyV2.Modals
         }
 
         public bool IsEnabled { get; private set; }
+        public bool EnableFileExtensions { get; private set; }
         public bool IsWhiteList { get; private set; }
         public string WatchedFileExtensions { get; private set; }
-        //public IList<Override> Overrides { get; private set; }
     }
 }
