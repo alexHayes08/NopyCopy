@@ -138,7 +138,7 @@ namespace NopyCopyV2
             private set
             {
                 isSolutionLoaded = value;
-                OnNopCommerceSolutionEvent?.Invoke(this, new NopCommerceSolutionEvent
+                OnSolutionEvent?.Invoke(this, new SolutionEvent
                 {
                     SolutionName = SolutionName,
                     SolutionLoaded = isSolutionLoaded
@@ -189,7 +189,7 @@ namespace NopyCopyV2
         #region Events
 
         public event EventHandler<DebugEvent> OnDebugEvent;
-        public event EventHandler<NopCommerceSolutionEvent> OnNopCommerceSolutionEvent;
+        public event EventHandler<SolutionEvent> OnSolutionEvent;
         public event EventHandler<FileSavedEvent> OnFileSavedEvent;
 
         #endregion
@@ -217,6 +217,9 @@ namespace NopyCopyV2
             var project = document.ProjectItem.ContainingProject;
             var fullPath = document.FullName;
 
+            _dte.Events.BuildEvents.OnBuildProjConfigDone += BuildEvents_OnBuildProjConfigDone;
+
+            // UNCOMMENT THIS
             // Return if not disabled or if not debugging.
             //if (!Configuration.IsEnabled || !IsDebugging)
             //{
@@ -271,6 +274,15 @@ namespace NopyCopyV2
             }
 
             return S_OK;
+        }
+
+        private void BuildEvents_OnBuildProjConfigDone(string Project,
+            string ProjectConfig,
+            string Platform,
+            string SolutionConfig,
+            bool Success)
+        {
+            throw new NotImplementedException();
         }
 
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
