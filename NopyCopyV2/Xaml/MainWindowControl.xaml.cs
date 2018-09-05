@@ -246,13 +246,13 @@ namespace NopyCopyV2.Xaml
                 Label_NoSolutionLoadedMessage.Visibility = Visibility.Collapsed;
                 Label_SolutionNameLabel.Visibility = Visibility.Visible;
                 Label_SolutionNameLabel.Content = e.SolutionName;
-                Logs.Add("NopCommerce solution loaded");
+                Logs.Add("Solution loaded");
             }
             else
             {
                 Label_NoSolutionLoadedMessage.Visibility = Visibility.Visible;
                 Label_SolutionNameLabel.Visibility = Visibility.Collapsed;
-                Logs.Add("The solution was unloaded");
+                Logs.Add("Solution unloaded");
             }
         }
 

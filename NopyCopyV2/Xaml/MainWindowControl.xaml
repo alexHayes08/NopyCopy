@@ -12,37 +12,6 @@
              Name="NopyCopyToolWindow">
     <UserControl.Resources>
         <Converters:VisibilityConverter x:Key="visibilityConverter"/>
-        <!--<src:MainWindowControl x:Key="mainWindowCtrlDataSrc"/>-->
-        <!--<Style TargetType="Label">
-            <Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}"/>
-            <Setter Property="TextBlock.FontSize" Value="{DynamicResource VsFont.EnvironmentFontSize}" />
-            -->
-        <!--<Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}" />-->
-        <!--
-            <Setter Property="Foreground" Value="{DynamicResource vsp:EnvironmentColors.ToolWindowTextBrushKey}"/>
-        </Style>
-        <Style TargetType="TabItem">
-            <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
-            <Setter Property="Foreground" Value="{DynamicResource VsBrush.EnvironmentForegroundGradient}"/>
-        </Style>
-        <Style TargetType="DockPanel">
-            <Setter Property="Background" Value="{DynamicResource VsBrush.EnvironmentBackgroundGradient}"/>
-        </Style>-->
-        <!--<Style TargetType="Label" x:Key="ErrorMessageLabelStyle">
-            <Setter Property="Foreground" Value="OrangeRed"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=ErrorMessage}" Value="{x:Null}">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>-->
-        <!--<Style TargetType="DockPanel" x:Key="VisibleOnlyOn">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Value}" Value="{x:Null}">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>-->
         <Style TargetType="{x:Type Button}">
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.DockTargetButtonBackgroundBeginColorKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.MainWindowButtonActiveGlyphBrushKey}}"/>
@@ -72,24 +41,8 @@
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
         </Style>
-        <!--<Style TargetType="{x:Type Path}">
-            <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.GlyphBrushKey}}"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GridViewColumnHeader}}}" Value="True">
-                    <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.MouseOverGlyphBrushKey}}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Path=IsPressed, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type GridViewColumnHeader}}}" Value="True">
-                    <Setter Property="Fill" Value="{DynamicResource {x:Static vsp:HeaderColors.MouseDownGlyphBrushKey}}" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="GridViewColumnHeaderGripper" TargetType="Thumb">
-            <Setter Property="Width" Value="8"/>
-            <Setter Property="Background" Value="{DynamicResource {x:Static vsp:HeaderColors.SeparatorLineBrushKey}}"/>
-        </Style>-->
     </UserControl.Resources>
     <Grid>
-        <!-- DataContext="{StaticResource mainWindowCtrlDataSrc}" -->
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
@@ -97,35 +50,27 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0">
-            <!--<Label x:Name="Label_ErrorMessage" Content="{Binding Path=ErrorMessage}" DockPanel.Dock="Top" Foreground="#FFE51400" Style="{StaticResource ErrorMessageLabelStyle}"/>-->
-        </DockPanel>
         <DockPanel x:Name="DockPanel_StatusesContainer" Visibility="Collapsed">
             <Ellipse x:Name="Ellipse_ActiveIndicator" Height="25" Width="25" Fill="Green" DockPanel.Dock="Left"/>
             <Label x:Name="Label_ActiveIndicator" DockPanel.Dock="Left">Active</Label>
         </DockPanel>
-        <TabControl Margin="0" Grid.Row="1">
-            <TabItem Header="Settings">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <DockPanel Grid.Row="0">
-                        <DockPanel DockPanel.Dock="Top">
-                            <!--<DockPanel.Visibility>
-                                <Binding Converter="{StaticResource visibilityConverter}" Path="NopyCopyService.IsSolutionLoaded"/>
-                            </DockPanel.Visibility>-->
-                            <Label x:Name="Label_NoSolutionLoadedMessage" Content="No solution loaded"/>
-                        </DockPanel>
-                        <DockPanel DockPanel.Dock="Top">
-                            <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Visibility="Collapsed"/>
-                            <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
-                        </DockPanel>
-                        <CheckBox x:Name="Checkbox_Enable"
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0">
+                <DockPanel DockPanel.Dock="Top">
+                    <Label x:Name="Label_NoSolutionLoadedMessage" Content="No solution loaded"/>
+                </DockPanel>
+                <DockPanel DockPanel.Dock="Top">
+                    <Label x:Name="Label_DebugMessageBox" DockPanel.Dock="Top" Content="Debugging" Visibility="Collapsed"/>
+                    <Label x:Name="Label_SolutionNameLabel" DockPanel.Dock="Left">Current Solution:</Label>
+                </DockPanel>
+                <CheckBox x:Name="Checkbox_Enable"
                                   Content="Enable (copy files on save)"
                                   HorizontalAlignment="Left"
                                   Margin="10"
@@ -134,7 +79,7 @@
                                   IsEnabled="False"
                                   Unchecked="Checkbox_Enable_Unchecked" 
                                   Checked="Checkbox_Enable_Checked"/>
-                        <CheckBox x:Name="Checkbox_EnableFileExtensions"
+                <CheckBox x:Name="Checkbox_EnableFileExtensions"
                                   Content="Enable filtering by file extensions"
                                   HorizontalAlignment="Left"
                                   Margin="10"
@@ -143,157 +88,81 @@
                                   IsEnabled="False"
                                   Unchecked="Checkbox_EnableFileExtensions_Unchecked"
                                   Checked="Checkbox_EnableFileExtensions_Checked"/>
-                        <!-- IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}" -->
-                        <!--Unchecked="Checkbox_Enable_Unchecked" Checked="Checkbox_Enable_Checked"-->
-                    </DockPanel>
-                    <!--<DockPanel Grid.Row="1" Margin="0,0,0,5" Visibility="Collapsed">
+                <!-- IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}" -->
+                <!--Unchecked="Checkbox_Enable_Unchecked" Checked="Checkbox_Enable_Checked"-->
+            </DockPanel>
+            <!--<DockPanel Grid.Row="1" Margin="0,0,0,5" Visibility="Collapsed">
                         <Label x:Name="Label_ListedFileExtnesionsHeader" Grid.Row="1" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}">Listed File Extensions</Label>
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                         <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
                     </DockPanel>-->
-                    <Grid Grid.Row="2" x:Name="Grid_AddFileExtensions"
+            <Grid Grid.Row="2" x:Name="Grid_AddFileExtensions"
                           Visibility="Collapsed">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel x:Name="StackPanel_AddAndDeleteFileExtBtnsContainer"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel x:Name="StackPanel_AddAndDeleteFileExtBtnsContainer"
                                     Orientation="Horizontal"
                                     Grid.Column="1"
                                     Visibility="Collapsed">
-                            <Button x:Name="Button_AddItem"
+                    <Button x:Name="Button_AddItem"
                                     Content="Add Item"
                                     Width="Auto"
                                     Padding="5"
                                     Margin="5"
                                     Click="Button_AddItem_Click"
                                     ToolTip="Add an item to the list of tracked file extensions."/>
-                            <Button x:Name="Button_DeleteItems"
+                    <Button x:Name="Button_DeleteItems"
                                     Content="Delete Item(s)"
                                     Width="Auto"
                                     Padding="5"
                                     Margin="5"
                                     Click="Button_DeleteItems_Click"
                                     ToolTip="Remove all selected items from the list of tracked filed extensions."/>
-                        </StackPanel>
-                    </Grid>
-                    <DockPanel x:Name="DockPanel_NewExtensionContainer"
+                </StackPanel>
+            </Grid>
+            <DockPanel x:Name="DockPanel_NewExtensionContainer"
                                Grid.Row="3"
                                Visibility="Collapsed">
-                        <DockPanel DockPanel.Dock="Top">
-                            <Label x:Name="Label_newExtension">
-                                Enter New Extension:
-                            </Label>
-                            <TextBox x:Name="TextBox_newExtension"
+                <DockPanel DockPanel.Dock="Top">
+                    <Label x:Name="Label_newExtension">
+                        Enter New Extension:
+                    </Label>
+                    <TextBox x:Name="TextBox_newExtension"
                                      Margin="4"
                                      AutoWordSelection="False">
-                                <TextBox.ToolTip>
-                                    IE: .js, .json, .html, etc...
-                                </TextBox.ToolTip>
-                            </TextBox>
-                        </DockPanel>
-                        <Grid DockPanel.Dock="Bottom">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="Button_confirmNewExtension"
+                        <TextBox.ToolTip>
+                            IE: .js, .json, .html, etc...
+                        </TextBox.ToolTip>
+                    </TextBox>
+                </DockPanel>
+                <Grid DockPanel.Dock="Bottom">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="Button_confirmNewExtension"
                                     Background="#FF40A63A"
                                     Foreground="White"
                                     Click="Button_confirmNewExtension_Click">
-                                Confirm
-                            </Button>
-                            <Button x:Name="Button_cancelNewExtension"
+                        Confirm
+                    </Button>
+                    <Button x:Name="Button_cancelNewExtension"
                                     Grid.Column="1"
                                     Background="#FFE14A2F"
                                     Foreground="White"
                                     Click="Button_cancelNewExtension_Click">
-                                Cancel
-                            </Button>
-                        </Grid>
-                    </DockPanel>
-                    <ListView x:Name="ListView_WatchedFileExtensions"
+                        Cancel
+                    </Button>
+                </Grid>
+            </DockPanel>
+            <ListView x:Name="ListView_WatchedFileExtensions"
                               Grid.Row="4"
                               IsTextSearchEnabled="False"
                               Visibility="Collapsed"/>
-                </Grid>
-            </TabItem>
-            <!--<TabItem Header="Overrides">
-                <TabItem.ToolTip>
-                    <ToolTip>
-                        'Overrides' will change where files are copied to upon saving
-                    </ToolTip>
-                </TabItem.ToolTip>
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Grid x:Name="Grid_OverridesToolbar">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="Button_AddOverride" Margin="4" Background="#FF40A63A" Foreground="White" Content="Add" Click="Button_AddOverride_Click">
-                            <Button.ToolTip>
-                                <ToolTip>
-                                    <Label>
-                                        Add a new override
-                                    </Label>
-                                </ToolTip>
-                            </Button.ToolTip>
-                        </Button>
-                        <Button x:Name="Button_DeleteOverride" Grid.Column="1" Margin="4" Background="#FFE14A2F" Foreground="White" Content="Delete">
-                            <Button.ToolTip>
-                                <ToolTip>
-                                    <Label>
-                                        To delete multiple items from the list use Shift + click or Ctrl + click.
-                                    </Label>
-                                </ToolTip>
-                            </Button.ToolTip>
-                        </Button>
-                    </Grid>
-                    <DockPanel x:Name="DockPanel_NewOverrideContainer" Visibility="Collapsed" Grid.Row="1">
-                        <Label x:Name="Label_NewOverrideWhenFileIsSaved" Content="When File is Saved" DockPanel.Dock="Top"/>
-                        <TextBox x:Name="TextBox_NewOverrideWhenFileIsSaved" DockPanel.Dock="Top" AutoWordSelection="False">
-                            <TextBox.ToolTip>
-                                <ToolTip>
-                                    <Label>
-                                        Can be a regex expression, the full file path, or a file path relative to the solution folder.
-                                    </Label>
-                                </ToolTip>
-                            </TextBox.ToolTip>
-                        </TextBox>
-                        <Label x:Name="Label_NewOverrideCopyTo" DockPanel.Dock="Top" Content="Copy File To"/>
-                        <TextBox x:Name="TextBox_NewOverrideCopyTo" DockPanel.Dock="Top" AutoWordSelection="False">
-                            <TextBox.ToolTip>
-                                <ToolTip>
-                                    <Label>
-                                        Can be a full file path or a file path relative to the solution folder.
-                                    </Label>
-                                </ToolTip>
-                            </TextBox.ToolTip>
-                        </TextBox>
-                        <ListView x:Name="ListView_NewOverridesTransforms" DockPanel.Dock="Top"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="Button_NewOverrideConfirm" Content="Confirm" Margin="4" Background="#FF40A63A" Foreground="White" Click="Button_NewOverrideConfirm_Click"/>
-                            <Button x:Name="Button_NewOverrideCancel" Content="Cancel" Grid.Column="1" Margin="4" Foreground="White" Background="#FFE14A2F" Click="Button_NewOverrideCancel_Click"/>
-                        </Grid>
-                    </DockPanel>
-                    <ListView x:Name="ListView_Overrides" Grid.Row="3" IsTextSearchEnabled="False"/>
-                </Grid>
-            </TabItem>-->
-            <TabItem Header="Log">
-                <Grid>
-                    <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False"/>
-                </Grid>
-            </TabItem>
-        </TabControl>
+            <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False"/>
+        </Grid>
     </Grid>
 </UserControl>

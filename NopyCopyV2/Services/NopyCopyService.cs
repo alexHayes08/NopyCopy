@@ -41,6 +41,7 @@ namespace NopyCopyV2
         private readonly RunningDocumentTable _runningDocumentTable;
         private readonly ShellSettingsManager _shellSettingsManager;
         private readonly DebuggerEvents _debuggerEvents;
+        private readonly BuildEvents _buildEvents;
         private readonly DTE _dte;
         private readonly IVsSolution2 _solutionService;
         private readonly IVsStatusbar _statusBar;
@@ -82,6 +83,7 @@ namespace NopyCopyV2
                 .GetService(typeof(SVsStatusbar)) as IVsStatusbar;
 
             _debuggerEvents = dteService.Events.DebuggerEvents;
+            _BuildEvents = dteService.Events.BuildEvents;
             _dte = dteService;
             _runningDocumentTable = runningDocumentTable;
             _solutionService = solutionService;
@@ -215,8 +217,15 @@ namespace NopyCopyV2
             ThreadHelper.ThrowIfNotOnUIThread();
             var document = FindDocument(docCookie);
             var project = document.ProjectItem.ContainingProject;
-            var fullPath = document.FullName;
+            var fullPath = new Uri(document.FullName);
 
+            // If the containing project was null, ignore the file.
+            if (project == null)
+            {
+                return S_OK;
+            }
+
+            // TODO: Uncomment
             // Return if not disabled or if not debugging.
             //if (!Configuration.IsEnabled || !IsDebugging)
             //{
@@ -225,6 +234,42 @@ namespace NopyCopyV2
 
             if (ShouldCopy(document))
             {
+                var allProps = project.Properties.CastToDictionary();
+
+                var test = new List<object>();
+                var activeConfig = project.ConfigurationManager
+                    .ActiveConfiguration
+                    .OutputGroups;
+                for (int i = 0; i < activeConfig.Count; i++)
+                {
+                    try
+                    {
+                        var prop = activeConfig.Item(i);
+                        var a = new
+                        {
+                            prop.Description,
+                            prop.DisplayName,
+                            prop.FileCount,
+                            Files = new List<string>()
+                        };
+
+                        for (int ii = 0; ii < prop.FileCount; ii++)
+                        {
+                            var fileName = prop.FileNames;
+                            if (fileName is string fileNamestr)
+                            {
+                                a.Files.Add(fileNamestr);
+                            }
+                        }
+                        test.Add(a);
+                    }
+                    catch { }
+                }
+
+                var obj = project.ConfigurationManager.ActiveConfiguration
+                    .Properties
+                    .CastToDictionary();
+
                 if (!project.Properties.TryGetProperty("LocalPath",
                     out string localPath))
                 {
@@ -247,10 +292,13 @@ namespace NopyCopyV2
                     }
                 }
 
-                var diff = fullPath.Replace(localPath, "");
+                var localPathUri = new Uri(localPath);
+                var diff = localPathUri.MakeRelativeUri(fullPath);
 
                 // Get the path to copy the file to.
-                var copyingTo = Path.Combine(localPath, outputPath, diff);
+                var copyingTo = Path.Combine(localPath,
+                    outputPath,
+                    Uri.UnescapeDataString(diff.ToString()));
 
                 // Copy the file & emit the event.
                 File.Copy(document.FullName, copyingTo, true);
@@ -376,7 +424,8 @@ namespace NopyCopyV2
         private void _debuggerEvents_OnEnterDesignMode(dbgEventReason Reason)
         {
             IsDebugging = false;
-            UnadviseDocumentEvents();
+            //UnadviseDocumentEvents(); // TODO: This is commented out only
+            // for debugging purposes.
 
             // Clear the cache here as well
             cacheManager.Clear();
@@ -465,6 +514,44 @@ namespace NopyCopyV2
                 _debuggerEvents.OnEnterDesignMode -= _debuggerEvents_OnEnterDesignMode;
                 _debuggerEvents.OnEnterRunMode -= _debuggerEvents_OnEnterRunMode;
                 debugEventsCookie = null;
+            }
+        }
+
+        private void AdviseBuildEvents()
+        {
+            _buildEvents.OnBuildProjConfigBegin += _buildEvents_OnBuildProjConfigBegin;
+            _buildEvents.OnBuildProjConfigDone += _buildEvents_OnBuildProjConfigDone;
+            _buildEvents.OnBuildBegin += _buildEvents_OnBuildBegin;
+            _buildEvents.OnBuildDone += _buildEvents_OnBuildDone;
+        }
+
+        private void _buildEvents_OnBuildProjConfigBegin(string Project,
+            string ProjectConfig,
+            string Platform,
+            string SolutionConfig)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _buildEvents_OnBuildBegin(vsBuildScope Scope, vsBuildAction Action)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _buildEvents_OnBuildDone(vsBuildScope Scope, vsBuildAction Action)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void _buildEvents_OnBuildProjConfigDone(string Project,
+            string ProjectConfig,
+            string Platform,
+            string SolutionConfig,
+            bool Success)
+        {
+            if (Success)
+            {
+
             }
         }
 

@@ -47,7 +47,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <CopyVsixExtensionFiles>True</CopyVsixExtensionFiles>
+    <CopyVsixExtensionFiles>False</CopyVsixExtensionFiles>
     <CopyVsixExtensionLocation>C:\Users\Alexander\source\LocalNuGetRepo</CopyVsixExtensionLocation>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
