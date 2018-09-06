@@ -2,15 +2,14 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using NopyCopyV2.Modals;
 using NopyCopyV2.Properties;
 using NopyCopyV2.Services;
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Threading;
 using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2
@@ -34,7 +33,7 @@ namespace NopyCopyV2
     /// </remarks>
     [ProvideService(typeof(SNopyCopyService))]
     [ProvideService(typeof(SVSDKHelperService))]
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideToolWindow(typeof(MainWindow))]
@@ -44,7 +43,7 @@ namespace NopyCopyV2
     [ProvideToolWindow(typeof(MainWindow))]
     [ProvideOptionPage(typeof(OptionsPage), 
         OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
-    public sealed class MainWindowPackage : PackageV2, IVsShellPropertyEvents
+    public sealed class MainWindowPackage : AsyncPackage, IVsShellPropertyEvents
     {
         #region Fields
 
@@ -72,8 +71,10 @@ namespace NopyCopyV2
 
         #region Functions
 
-        private void ShowToolWindow(object sender, EventArgs e)
+        private async void ShowToolWindowAsync(object sender, EventArgs e)
         {
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+
             // Get the instance number 0 of this tool window. This window is a single instance so 
             // this instance is the only one.
             // The last flag is set to true so that if the tool window doesn't exist it will be created
@@ -88,9 +89,14 @@ namespace NopyCopyV2
 
         protected override void Dispose(bool disposing)
         {
-            // Detach event handlers
-            if (_vsShell != null && shellPropertyChangedCookie != 0)
-                _vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
+            if (ThreadHelper.JoinableTaskContext.IsOnMainThread)
+            {
+                // Detach event handlers
+                if (_vsShell != null && shellPropertyChangedCookie != 0)
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+                    _vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            }
 
             base.Dispose(disposing);
         }
@@ -120,26 +126,65 @@ namespace NopyCopyV2
         /// the initialization code that rely on services provided by 
         /// VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        /// <param name="cancellationToken"></param>
+        /// <param name="progress"></param>
+        /// <returns></returns>
+        protected override async System.Threading.Tasks.Task InitializeAsync(
+            CancellationToken cancellationToken,
+            IProgress<ServiceProgressData> progress)
         {
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+            await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            // Make initial progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Initializing",
+                progressText: "Initializing",
+                currentStep: 0,
+                totalSteps: 10));
             var serviceContainer = this as IServiceContainer;
 
-            //ServiceCreatorCallback vsdkHelperCallback = new
-            //    ServiceCreatorCallback(CreateServiceVSDKHelperService);
-            //serviceContainer.AddService(typeof(SVSDKHelperService), vsdkHelperCallback);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
 
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Calling base.InitializeAsync",
+                progressText: "Initializing",
+                currentStep: 1,
+                totalSteps: 10));
+            await base.InitializeAsync(cancellationToken, progress);
+            MainWindowCommand.Initialize(this);
+
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Registering services",
+                progressText: "Initializing",
+                currentStep: 2,
+                totalSteps: 10));
             ServiceCreatorCallback nopyCopyCallback =
                 new ServiceCreatorCallback(CreateServiceNopyCopyService);
             serviceContainer.AddService(typeof(SNopyCopyService), nopyCopyCallback);
 
-            nopyCopyService = GetService(typeof(SNopyCopyService)) as NopyCopyService;
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving NopyCopyService",
+                currentStep: 3,
+                totalSteps: 10));
+            nopyCopyService = await GetServiceAsync(typeof(SNopyCopyService))
+                as NopyCopyService;
 
-            base.Initialize();
-            MainWindowCommand.Initialize(this);
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving IVsShell",
+                currentStep: 4,
+                totalSteps: 10));
+            _vsShell = ServiceProvider.GlobalProvider
+                .GetService(typeof(SVsShell)) as IVsShell;
 
-            // Get shell object
-            _vsShell = ServiceProvider.GlobalProvider.GetService(typeof(SVsShell)) as IVsShell;
             if (_vsShell != null)
             {
                 // Initialize visual effect values so themes can determine if 
@@ -156,22 +201,62 @@ namespace NopyCopyV2
                 }
             }
 
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving ToolWindow",
+                currentStep: 5,
+                totalSteps: 10));
             // Get tool window
             if (toolWindow == null)
             {
                 toolWindow = FindToolWindow(typeof(MainWindow), 0, true) as MainWindow;
             }
 
-            // Register needed services
-            var colorService = ServiceProvider.GlobalProvider.GetService(typeof(IVsUIShell5)) as IVsUIShell5;
-            var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE;
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving IVsUIShell5",
+                currentStep: 6,
+                totalSteps: 10));
+            var colorService = ServiceProvider.GlobalProvider.GetService(typeof(IVsUIShell5))
+                as IVsUIShell5;
+
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving DTE",
+                currentStep: 7,
+                totalSteps: 10));
+            var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE))
+                as DTE;
+
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving DTE",
+                currentStep: 8,
+                totalSteps: 10));
             var runningDocumentTable = new RunningDocumentTable(this);
+
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Retrieving services",
+                progressText: "Retrieving DTE",
+                currentStep: 9,
+                totalSteps: 10));
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
 
             toolWindow.ColorService = colorService;
             toolWindow.SetupEvents(nopyCopyService);
 
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            // Make progress report.
+            progress.Report(new ServiceProgressData(
+                waitMessage: "Finished",
+                progressText: "Completed",
+                currentStep: 10,
+                totalSteps: 10));
+            return;
         }
 
         #endregion
