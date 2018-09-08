@@ -18,7 +18,6 @@ namespace NopyCopyV2
     /// This is the class that implements the package exposed by this assembly.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// The minimum requirement for a class to be considered a valid package for Visual Studio
     /// is to implement the IVsPackage interface and register itself with the shell.
     /// This package uses the helper classes defined inside the Managed Package Framework (MPF)
@@ -26,13 +25,12 @@ namespace NopyCopyV2
     /// IVsPackage interface and uses the registration attributes defined in the framework to
     /// register itself and its components with the shell. These attributes tell the pkgdef creation
     /// utility what data to put into .pkgdef file.
-    /// </para>
-    /// <para>
+    /// <param name="">
     /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
-    /// </para>
+    /// </param>
     /// </remarks>
+    [ProvideAutoLoad(PackageGuidString, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideService(typeof(SNopyCopyService))]
-    [ProvideService(typeof(SVSDKHelperService))]
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -41,7 +39,7 @@ namespace NopyCopyV2
     [Guid(MainWindowPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(MainWindow))]
-    [ProvideOptionPage(typeof(OptionsPage), 
+    [ProvideOptionPage(typeof(OptionsPage),
         OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
     public sealed class MainWindowPackage : AsyncPackage, IVsShellPropertyEvents
     {
@@ -143,6 +141,7 @@ namespace NopyCopyV2
                 totalSteps: 10));
             var serviceContainer = this as IServiceContainer;
 
+            // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -157,6 +156,10 @@ namespace NopyCopyV2
             await base.InitializeAsync(cancellationToken, progress);
             MainWindowCommand.Initialize(this);
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Registering services",
@@ -167,6 +170,10 @@ namespace NopyCopyV2
                 new ServiceCreatorCallback(CreateServiceNopyCopyService);
             serviceContainer.AddService(typeof(SNopyCopyService), nopyCopyCallback);
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
@@ -176,14 +183,24 @@ namespace NopyCopyV2
             nopyCopyService = await GetServiceAsync(typeof(SNopyCopyService))
                 as NopyCopyService;
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
                 progressText: "Retrieving IVsShell",
                 currentStep: 4,
                 totalSteps: 10));
+
+            // Get IVsShell service.
             _vsShell = ServiceProvider.GlobalProvider
                 .GetService(typeof(SVsShell)) as IVsShell;
+
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             if (_vsShell != null)
             {
@@ -207,11 +224,16 @@ namespace NopyCopyV2
                 progressText: "Retrieving ToolWindow",
                 currentStep: 5,
                 totalSteps: 10));
+
             // Get tool window
             if (toolWindow == null)
             {
                 toolWindow = FindToolWindow(typeof(MainWindow), 0, true) as MainWindow;
             }
+
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             // Make progress report.
             progress.Report(new ServiceProgressData(
@@ -222,6 +244,10 @@ namespace NopyCopyV2
             var colorService = ServiceProvider.GlobalProvider.GetService(typeof(IVsUIShell5))
                 as IVsUIShell5;
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
@@ -231,6 +257,10 @@ namespace NopyCopyV2
             var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE))
                 as DTE;
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
@@ -239,6 +269,10 @@ namespace NopyCopyV2
                 totalSteps: 10));
             var runningDocumentTable = new RunningDocumentTable(this);
 
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
@@ -246,6 +280,10 @@ namespace NopyCopyV2
                 currentStep: 9,
                 totalSteps: 10));
             var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
+
+            // Check if cancelled.
+            if (cancellationToken.IsCancellationRequested)
+                return;
 
             toolWindow.ColorService = colorService;
             toolWindow.SetupEvents(nopyCopyService);

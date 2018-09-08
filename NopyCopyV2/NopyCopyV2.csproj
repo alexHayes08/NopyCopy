@@ -66,6 +66,7 @@
     <Compile Include="Extensions\NopProjectExtensions.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MainWindowCommand.cs" />
+    <Compile Include="Modals\BuildModel.cs" />
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
@@ -319,9 +320,8 @@
   <Import Project="..\packages\Microsoft.VisualStudio.SDK.Analyzers.15.8.33\build\Microsoft.VisualStudio.SDK.Analyzers.targets" Condition="Exists('..\packages\Microsoft.VisualStudio.SDK.Analyzers.15.8.33\build\Microsoft.VisualStudio.SDK.Analyzers.targets')" />
   <Import Project="..\packages\Microsoft.VSSDK.BuildTools.15.8.3247\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\packages\Microsoft.VSSDK.BuildTools.15.8.3247\build\Microsoft.VSSDK.BuildTools.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>del .nopycopy.build.info;
-$(OutDir) &gt;&gt; .nopycopy.build.info;
-$(TargetDir) &gt;&gt; .nopycopy.build.info;</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -25,7 +25,13 @@ namespace NopyCopyV2
     {
         #region Fields
 
+        private const string NOPYCOPY_BUILD_INFO_FILENAME = ".nopycopy.build.info";
         private const string DESCRIPTION_SYSTEM_NAME_LINE_PREFIX = "SystemName:";
+        private const string BUILD_MACRO =
+            "if exist $(ProjectDir).nopycopy.build.info (del " +
+            "$(ProjectDir).nopycopy.build.info) & echo $(OutDir) >> " +
+            "$(ProjectDir).nopycopy.build.info & echo $(TargetDir) >> " +
+            "$(ProjectDir).nopycopy.build.info";
 
         private readonly IServiceProvider serviceProvider;
 
@@ -232,20 +238,48 @@ namespace NopyCopyV2
 
         private async Task OnAfterSaveAsync(uint docCookie)
         {
+            // UNCOMMENT THIS
+            // Ignore if disabled or not debugging.
+            //if (!Configuration.IsEnabled || !IsDebugging)
+            //{
+            //    return;
+            //}
+
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             var document = await FindDocumentAsync(docCookie);
             var project = document.ProjectItem.ContainingProject;
             var fullPath = document.FullName;
 
-            // UNCOMMENT THIS
-            // Return if not disabled or if not debugging.
-            //if (!Configuration.IsEnabled || !IsDebugging)
-            //{
-            //    return S_OK;
-            //}
+            // Retrieve the build info
+            var buildInfoCacheKey = $"{project.UniqueName}-buildinfo-file";
+            BuildModel buildFileInfo = null;
 
-            if (await ShouldCopyAsync(document))
+            if (cacheManager.Exists(buildInfoCacheKey))
+            {
+                buildFileInfo = cacheManager.Get<BuildModel>(buildInfoCacheKey);
+            }
+            else
+            {
+                var fileInfo = await project.TryGetFileInfoAsync(
+                    NOPYCOPY_BUILD_INFO_FILENAME);
+                var lines = File.ReadAllLines(fileInfo.FullName);
+
+                // If there aren't two lines return.
+                if (lines.Length != 2)
+                {
+                    return;
+                }
+
+                buildFileInfo = new BuildModel
+                {
+                    OutDir = lines[0],
+                    ProjectName = lines[1]
+                };
+                cacheManager.Add(buildInfoCacheKey, buildFileInfo);
+            }
+
+            if (buildFileInfo != null && await ShouldCopyAsync(document))
             {
                 if (!project.Properties.TryGetProperty("LocalPath",
                     out string localPath))
