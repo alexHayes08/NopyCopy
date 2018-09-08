@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace NopyCopyV2.Extensions
 {
@@ -263,6 +264,7 @@ namespace NopyCopyV2.Extensions
         /// <returns></returns>
         public static bool TryGetSystemNameOfProject(this Project project, out string systemName)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             systemName = null;
 
             foreach (ProjectItem item in project.ProjectItems)
@@ -289,6 +291,34 @@ namespace NopyCopyV2.Extensions
             }
 
             return !string.IsNullOrEmpty(systemName);
+        }
+
+        /// <summary>
+        ///     Searches all project items for the first file whose filename
+        ///     matches the argument. Will return null if no file found.
+        /// </summary>
+        /// <param name="project"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static async Task<FileInfo> TryGetFileInfoAsync(this Project project, string fileName)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            FileInfo fileInfo = null;
+
+            foreach (ProjectItem projectItem in project.ProjectItems)
+            {
+                var name = projectItem.Name;
+                if (0 == string.Compare(name,
+                    fileName,
+                    StringComparison.InvariantCultureIgnoreCase))
+                {
+                    fileInfo = new FileInfo(projectItem.Document.FullName);
+                    break;
+                }
+            }
+
+            return fileInfo;
         }
 
         /// <summary>

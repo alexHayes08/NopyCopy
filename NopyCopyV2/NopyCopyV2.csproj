@@ -66,11 +66,11 @@
     <Compile Include="Extensions\NopProjectExtensions.cs" />
     <Compile Include="MainWindow.cs" />
     <Compile Include="MainWindowCommand.cs" />
+    <Compile Include="Modals\BuildModel.cs" />
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
     <Compile Include="Modals\Override.cs" />
-    <Compile Include="Modals\PackageV2.cs" />
     <Compile Include="Modals\Unsubscriber.cs" />
     <Compile Include="OptionsPage.cs">
       <SubType>Component</SubType>
@@ -88,7 +88,7 @@
     <Compile Include="Modals\DebugEvent.cs" />
     <Compile Include="Modals\EnableToggledEvent.cs" />
     <Compile Include="Modals\FileSavedEvent.cs" />
-    <Compile Include="Modals\NopCommerceSolutionEvent.cs" />
+    <Compile Include="Modals\SolutionEvent.cs" />
     <Compile Include="Modals\NopyCopyConfiguration.cs" />
     <Compile Include="Services\NopyCopyService.cs" />
     <Compile Include="PgkCmdId.cs" />
@@ -319,6 +319,10 @@
   <Import Project="..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.8.145\build\Microsoft.VisualStudio.Threading.Analyzers.targets" Condition="Exists('..\packages\Microsoft.VisualStudio.Threading.Analyzers.15.8.145\build\Microsoft.VisualStudio.Threading.Analyzers.targets')" />
   <Import Project="..\packages\Microsoft.VisualStudio.SDK.Analyzers.15.8.33\build\Microsoft.VisualStudio.SDK.Analyzers.targets" Condition="Exists('..\packages\Microsoft.VisualStudio.SDK.Analyzers.15.8.33\build\Microsoft.VisualStudio.SDK.Analyzers.targets')" />
   <Import Project="..\packages\Microsoft.VSSDK.BuildTools.15.8.3247\build\Microsoft.VSSDK.BuildTools.targets" Condition="Exists('..\packages\Microsoft.VSSDK.BuildTools.15.8.3247\build\Microsoft.VSSDK.BuildTools.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

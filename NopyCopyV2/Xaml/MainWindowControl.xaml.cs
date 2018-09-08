@@ -239,7 +239,7 @@ namespace NopyCopyV2.Xaml
             }
         }
 
-        private void NopCommerceSolutionEventHandler(object sender, NopCommerceSolutionEvent e)
+        private void SolutionEventHandler(object sender, SolutionEvent e)
         {
             if (e.SolutionLoaded)
             {
@@ -297,7 +297,7 @@ namespace NopyCopyV2.Xaml
 
             observerRef = nopyCopyService.Configuration.Subscribe(this);
             nopyCopyService.OnDebugEvent += DebugEventHandler;
-            nopyCopyService.OnNopCommerceSolutionEvent += NopCommerceSolutionEventHandler;
+            nopyCopyService.OnSolutionEvent += SolutionEventHandler;
             nopyCopyService.OnFileSavedEvent += FileSavedEventHandler;
 
             attachedHandlers = true;
@@ -315,7 +315,7 @@ namespace NopyCopyV2.Xaml
 
             observerRef.Dispose();
             nopyCopyService.OnDebugEvent -= DebugEventHandler;
-            nopyCopyService.OnNopCommerceSolutionEvent -= NopCommerceSolutionEventHandler;
+            nopyCopyService.OnSolutionEvent -= SolutionEventHandler;
             nopyCopyService.OnFileSavedEvent -= FileSavedEventHandler;
 
             attachedHandlers = false;
