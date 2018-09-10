@@ -54,13 +54,13 @@
             <Ellipse x:Name="Ellipse_ActiveIndicator" Height="25" Width="25" Fill="Green" DockPanel.Dock="Left"/>
             <Label x:Name="Label_ActiveIndicator" DockPanel.Dock="Left">Active</Label>
         </DockPanel>
-        <Grid>
+        <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0">
                 <DockPanel DockPanel.Dock="Top">
@@ -162,7 +162,7 @@
                               Grid.Row="4"
                               IsTextSearchEnabled="False"
                               Visibility="Collapsed"/>
-            <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False"/>
+            <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False" Grid.Row="4"/>
         </Grid>
     </Grid>
 </UserControl>

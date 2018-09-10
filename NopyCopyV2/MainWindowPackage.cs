@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2
@@ -29,8 +30,8 @@ namespace NopyCopyV2
     /// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
     /// </param>
     /// </remarks>
-    [ProvideAutoLoad(PackageGuidString, PackageAutoLoadFlags.BackgroundLoad)]
-    [ProvideService(typeof(SNopyCopyService))]
+    [ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideService(serviceType: typeof(SNopyCopyService), IsAsyncQueryable = true)]
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
@@ -101,19 +102,17 @@ namespace NopyCopyV2
 
         #region Package Members
 
-        private object CreateServiceVSDKHelperService(IServiceContainer container, Type serviceType)
-        {
-            if (typeof(SVSDKHelperService) == serviceType)
-                return new VSDKHelperService();
-            return null;
-        }
-
-        private object CreateServiceNopyCopyService(IServiceContainer container, Type serviceType)
+        private async Task<object> CreateServiceNopyCopyServiceAsync(
+            IAsyncServiceContainer container,
+            CancellationToken cancellationToken,
+            Type serviceType)
         {
             if (typeof(SNopyCopyService) == serviceType)
             {
                 var optionsPage = GetDialogPage(typeof(OptionsPage)) as OptionsPage;
-                return new NopyCopyService(this, optionsPage);
+                var service = new NopyCopyService(this, optionsPage);
+                await service.InitializeServiceAsync(cancellationToken);
+                return service;
             }
             return null;
         }
@@ -166,9 +165,9 @@ namespace NopyCopyV2
                 progressText: "Initializing",
                 currentStep: 2,
                 totalSteps: 10));
-            ServiceCreatorCallback nopyCopyCallback =
-                new ServiceCreatorCallback(CreateServiceNopyCopyService);
-            serviceContainer.AddService(typeof(SNopyCopyService), nopyCopyCallback);
+            //ServiceCreatorCallback nopyCopyCallback =
+            //    new ServiceCreatorCallback(CreateServiceNopyCopyService);
+            AddService(typeof(SNopyCopyService), CreateServiceNopyCopyServiceAsync);
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)

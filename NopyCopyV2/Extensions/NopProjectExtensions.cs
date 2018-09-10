@@ -446,8 +446,29 @@ namespace NopyCopyV2.Extensions
             {
                 try
                 {
+                    var propObj = properties.Item(i);
                     Property prop = properties.Item(i);
-                    dictionary[prop.Name] = prop.Value;
+                    string name = null;
+                    object value = null;
+                    try
+                    {
+                        name = prop.Name;
+                    }
+                    catch
+                    {
+                        // Skip if we can't get the name.
+                        continue;
+                    }
+
+                    try
+                    {
+                        value = prop.Value;
+                        var valType = prop?.Value?.GetType();
+                    }
+                    catch
+                    { }
+
+                    dictionary[name] = value;
                 }
                 catch
                 {
@@ -465,7 +486,7 @@ namespace NopyCopyV2.Extensions
         /// <param name="project"></param>
         /// <param name="item"></param>
         /// <returns></returns>
-        public static bool IsItemCopiedToOutput(ProjectItem item)
+        public static bool ItemHasCopiedToOutputPropertyAsTrue(ProjectItem item)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             if (item.Properties.TryGetProperty("CopyToOutputDirectory",

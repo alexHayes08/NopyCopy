@@ -12,10 +12,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using static Microsoft.VisualStudio.VSConstants;
 using static NopyCopyV2.Extensions.IVsSolutionExtensions;
 using static NopyCopyV2.Extensions.NopProjectExtensions;
+using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using NopyCopyConfiguration = NopyCopyV2.Modals.NopyCopyConfiguration;
 using Task = System.Threading.Tasks.Task;
 
@@ -33,7 +35,8 @@ namespace NopyCopyV2
             "$(ProjectDir).nopycopy.build.info & echo $(TargetDir) >> " +
             "$(ProjectDir).nopycopy.build.info";
 
-        private readonly IServiceProvider serviceProvider;
+        private readonly IAsyncServiceProvider serviceProvider;
+        private readonly Dictionary<string, Uri> projectUniqueNameToOutDirMapping;
 
         private bool isSolutionLoaded;
         private bool isDebugging;
@@ -45,14 +48,13 @@ namespace NopyCopyV2
         private ICacheManager<object> cacheManager;
 
         // Services
-        private readonly RunningDocumentTable _runningDocumentTable;
-        private readonly ShellSettingsManager _shellSettingsManager;
-        private readonly DebuggerEvents _debuggerEvents;
-        private readonly BuildEvents _buildEvents;
-        private readonly DTE _dte;
-        private readonly IVsSolution2 _solutionService;
-        private readonly IVsStatusbar _statusBar;
-        //private readonly IVSDKHelperService _vsdkHelpers;
+        private RunningDocumentTable _runningDocumentTable;
+        private ShellSettingsManager _shellSettingsManager;
+        private DebuggerEvents _debuggerEvents;
+        private BuildEvents _buildEvents;
+        private DTE _dte;
+        private IVsSolution2 _solutionService;
+        private IVsStatusbar _statusBar;
 
         // Cookies
         private uint? debugEventsCookie;
@@ -70,65 +72,11 @@ namespace NopyCopyV2
 
         #region Constructors
 
-        public NopyCopyService(IServiceProvider serviceProvider, OptionsPage options)
+        public NopyCopyService(IAsyncServiceProvider provider, OptionsPage options)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            this.serviceProvider = serviceProvider;
-
-            var dteService = ServiceProvider.GlobalProvider
-                .GetService(typeof(DTE)) as DTE;
-            Assumes.Present(dteService);
-
-            var runningDocumentTable = new RunningDocumentTable(
-                ServiceProvider.GlobalProvider);
-            var solutionService = ServiceProvider.GlobalProvider
-                .GetService(typeof(IVsSolution)) as IVsSolution2;
-            var shellSettingsService = new ShellSettingsManager(
-                ServiceProvider.GlobalProvider);
-            var statusBar = ServiceProvider.GlobalProvider
-                .GetService(typeof(SVsStatusbar)) as IVsStatusbar;
-
-            _debuggerEvents = dteService.Events.DebuggerEvents;
-            _BuildEvents = dteService.Events.BuildEvents;
-            _dte = dteService;
-            _runningDocumentTable = runningDocumentTable;
-            _solutionService = solutionService;
-            _statusBar = statusBar;
-            IsDebugging = false;
-            IsSolutionLoaded = false;
-
-            cacheManager = CacheFactory.Build(PROJECT_SYSTEMNAMES_CACHE_KEY,
-                settings =>
-                {
-                    settings.WithSystemRuntimeCacheHandle(SYSTEM_RUNTIME_CACHE_KEY);
-                });
-
-            // Check if a solution is currently loaded
-            if (_solutionService.IsSolutionLoaded())
-            {
-                // Check it the loaded solution is a nop commerce solution
-                IsSolutionLoaded = true;
-            }
-            else
-            {
-                IsSolutionLoaded = false;
-            }
-
-            // Listen for when debugging starts/ends
-            AdviseDebugEvents();
-
-            // Listen for when solution events occur
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-#pragma warning disable VSTHRD110 // Observe result of async calls
-            AdviseSolutionEventsAsync();
-#pragma warning restore VSTHRD110 // Observe result of async calls
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
-            // Init nopyCopyService
             Configuration = new NopyCopyConfiguration(options);
-
-            AdviseRunningDocumentEvents();
+            projectUniqueNameToOutDirMapping = new Dictionary<string, Uri>();
+            serviceProvider = provider;
         }
 
         #endregion
@@ -251,85 +199,75 @@ namespace NopyCopyV2
 
             var document = await FindDocumentAsync(docCookie);
             var project = document.ProjectItem.ContainingProject;
-            var fullPath = document.FullName;
+            var fullPath = new Uri(document.FullName);
 
-            // Retrieve the build info
-            var buildInfoCacheKey = $"{project.UniqueName}-buildinfo-file";
-            BuildModel buildFileInfo = null;
-
-            if (cacheManager.Exists(buildInfoCacheKey))
+            if (project == null)
             {
-                buildFileInfo = cacheManager.Get<BuildModel>(buildInfoCacheKey);
-            }
-            else
-            {
-                var fileInfo = await project.TryGetFileInfoAsync(
-                    NOPYCOPY_BUILD_INFO_FILENAME);
-                var lines = File.ReadAllLines(fileInfo.FullName);
-
-                // If there aren't two lines return.
-                if (lines.Length != 2)
-                {
-                    return;
-                }
-
-                buildFileInfo = new BuildModel
-                {
-                    OutDir = lines[0],
-                    ProjectName = lines[1]
-                };
-                cacheManager.Add(buildInfoCacheKey, buildFileInfo);
+                return;
             }
 
-            if (buildFileInfo != null && await ShouldCopyAsync(document))
+            if (await ShouldCopyAsync(document))
             {
-                if (!project.Properties.TryGetProperty("LocalPath",
-                    out string localPath))
-                {
-                    throw new Exception("Failed to get the local path of the" +
-                        " project.");
-                }
+                var success = false;
+                string reason = null;
+                string copyingTo = null;
 
-                // Try and find the OutDir first.
-                if (!project.ConfigurationManager.ActiveConfiguration
-                    .Properties
-                    .TryGetProperty("OutDir", out string outputPath))
+                do
                 {
-                    // If the OutDir was not found use the OutputPath.
+                    if (!project.Properties.TryGetProperty("LocalPath",
+                        out string localPath))
+                    {
+                        reason = "Failed to locate the local path of the " +
+                            "project.";
+                        break;
+                    }
+
+                    // Find the OutputPath.
                     if (!project.ConfigurationManager.ActiveConfiguration
                         .Properties
-                        .TryGetProperty("OutputPath", out outputPath))
+                        .TryGetProperty("OutputPath", out string outputPath))
                     {
-                        throw new Exception("Failed to get the output path of " +
-                            "the project.");
+                        reason = "Failed to get the output path of " +
+                            "the project.";
+                        break;
                     }
+
+                    var localPathUri = new Uri(localPath);
+                    var diff = localPathUri.MakeRelativeUri(fullPath);
+
+                    // Get the path to copy the file to.
+                    copyingTo = Path.Combine(localPath,
+                        outputPath,
+                        Uri.UnescapeDataString(diff.ToString()));
+
+                    // Before copying verify the 'copied' already file exists.
+                    if (!File.Exists(copyingTo))
+                    {
+                        reason = "No file exists at the copy location.";
+                        break;
+                    }
+                } while (false);
+
+                if (success)
+                {
+                    // Copy the file & emit the event.
+                    File.Copy(document.FullName, copyingTo, true);
+                    OnFileSavedEvent(this, new FileSavedEvent
+                    {
+                        SavedFile = new FileInfo(document.FullName),
+                        CopiedTo = new FileInfo(copyingTo)
+                    });
+
+                    await PrintToStatusBarAsync($"Copied file from:'{document.FullName}' to:'{copyingTo}'");
                 }
-
-                var localPathUri = new Uri(localPath);
-                var diff = localPathUri.MakeRelativeUri(fullPath);
-
-                // Get the path to copy the file to.
-                var copyingTo = Path.Combine(localPath,
-                    outputPath,
-                    Uri.UnescapeDataString(diff.ToString()));
-
-                // Copy the file & emit the event.
-                File.Copy(document.FullName, copyingTo, true);
-                OnFileSavedEvent(this, new FileSavedEvent
+                else
                 {
-                    SavedFile = new FileInfo(document.FullName),
-                    CopiedTo = new FileInfo(copyingTo)
-                });
-
-                await PrintToStatusBarAsync($"Copied file from:'{document.FullName}' to:'{copyingTo}'");
-            }
-            else
-            {
-                OnFileSavedEvent(this, new FileSavedEvent
-                {
-                    SavedFile = new FileInfo(document.FullName),
-                    CopiedTo = null
-                });
+                    OnFileSavedEvent(this, new FileSavedEvent
+                    {
+                        SavedFile = new FileInfo(document.FullName),
+                        CopiedTo = null
+                    });
+                }
             }
         }
 
@@ -456,6 +394,62 @@ namespace NopyCopyV2
 
         #endregion
 
+        public async Task InitializeServiceAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            var dteService = ServiceProvider.GlobalProvider
+                .GetService(typeof(DTE)) as DTE;
+            Assumes.Present(dteService);
+
+            var runningDocumentTable = new RunningDocumentTable(
+                ServiceProvider.GlobalProvider);
+            var solutionService = ServiceProvider.GlobalProvider
+                .GetService(typeof(IVsSolution)) as IVsSolution2;
+            var shellSettingsService = new ShellSettingsManager(
+                ServiceProvider.GlobalProvider);
+            var statusBar = ServiceProvider.GlobalProvider
+                .GetService(typeof(SVsStatusbar)) as IVsStatusbar;
+
+            _debuggerEvents = dteService.Events.DebuggerEvents;
+            _buildEvents = dteService.Events.BuildEvents;
+            _dte = dteService;
+            _runningDocumentTable = runningDocumentTable;
+            _solutionService = solutionService;
+            _statusBar = statusBar;
+            IsDebugging = false;
+            IsSolutionLoaded = false;
+
+            cacheManager = CacheFactory.Build(PROJECT_SYSTEMNAMES_CACHE_KEY,
+                settings =>
+                {
+                    settings.WithSystemRuntimeCacheHandle(SYSTEM_RUNTIME_CACHE_KEY);
+                });
+
+            // Check if a solution is currently loaded
+            if (_solutionService.IsSolutionLoaded())
+            {
+                // Check it the loaded solution is a nop commerce solution
+                IsSolutionLoaded = true;
+            }
+            else
+            {
+                IsSolutionLoaded = false;
+            }
+
+            // Listen for when debugging starts/ends
+            AdviseDebugEvents();
+
+            // Listen for when solution events occur
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+#pragma warning disable VSTHRD110 // Observe result of async calls
+            AdviseSolutionEventsAsync();
+#pragma warning restore VSTHRD110 // Observe result of async calls
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+            AdviseRunningDocumentEvents();
+        }
+
         /// <summary>
         ///     Instead of calling the SetText(...) directly on the _statusBar
         ///     service call this instead to avoid freeze related errors.
@@ -540,44 +534,6 @@ namespace NopyCopyV2
             }
         }
 
-        private void AdviseBuildEvents()
-        {
-            _buildEvents.OnBuildProjConfigBegin += _buildEvents_OnBuildProjConfigBegin;
-            _buildEvents.OnBuildProjConfigDone += _buildEvents_OnBuildProjConfigDone;
-            _buildEvents.OnBuildBegin += _buildEvents_OnBuildBegin;
-            _buildEvents.OnBuildDone += _buildEvents_OnBuildDone;
-        }
-
-        private void _buildEvents_OnBuildProjConfigBegin(string Project,
-            string ProjectConfig,
-            string Platform,
-            string SolutionConfig)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void _buildEvents_OnBuildBegin(vsBuildScope Scope, vsBuildAction Action)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void _buildEvents_OnBuildDone(vsBuildScope Scope, vsBuildAction Action)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void _buildEvents_OnBuildProjConfigDone(string Project,
-            string ProjectConfig,
-            string Platform,
-            string SolutionConfig,
-            bool Success)
-        {
-            if (Success)
-            {
-
-            }
-        }
-
         private void AdviseRunningDocumentEvents()
         {
             // Check that events aren't already being listened to.
@@ -621,19 +577,19 @@ namespace NopyCopyV2
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var ext = Path.GetExtension(document.FullName);
-
-            // Check extension
-            if (string.IsNullOrEmpty(ext))
-            {
-                return false;
-            }
-
             if (Configuration.EnableFileExtensions)
             {
+                var ext = Path.GetExtension(document.FullName);
+
+                // Check extension
+                if (string.IsNullOrEmpty(ext))
+                {
+                    return false;
+                }
+
                 var containsExtension = Configuration
-                    .GetWatchedFileExensions()
-                    .Contains(ext) && Configuration.IsWhiteList;
+                        .GetWatchedFileExensions()
+                        .Contains(ext) && Configuration.IsWhiteList;
 
                 if (!containsExtension)
                 {
@@ -642,9 +598,18 @@ namespace NopyCopyV2
             }
 
             // Check if 'CopyToOutput' is valid.
-            var result = IsItemCopiedToOutput(document.ProjectItem);
+            if (!ItemHasCopiedToOutputPropertyAsTrue(document.ProjectItem))
+            {
+                return false;
+            }
 
-            return result;
+            // Check if item was actually copied to the output.
+            if (!ItemExistsInOutputPath(document))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private async Task<Document> FindDocumentAsync(uint documentCookie)
@@ -659,6 +624,27 @@ namespace NopyCopyV2
                 .Cast<Document>()
                 .FirstOrDefault(doc => doc.FullName == documentInfo.Moniker);
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+        }
+
+        private bool ItemExistsInOutputPath(Document document)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var project = document.ProjectItem.ContainingProject;
+            var srcFullPath = document.FullName;
+
+            if (project == null)
+            {
+                return false;
+            }
+
+            if (!project.ConfigurationManager.ActiveConfiguration.Properties
+                .TryGetProperty("OutputPath", out string outputPath))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         #endregion
