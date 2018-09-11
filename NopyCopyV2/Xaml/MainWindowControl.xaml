@@ -162,6 +162,7 @@
                               Grid.Row="4"
                               IsTextSearchEnabled="False"
                               Visibility="Collapsed"/>
+            <Button x:Name="Button_TrimLogs" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Top" Content="Trim Logs" Margin="4" Click="TrimLogs" />
             <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False" Grid.Row="4"/>
         </Grid>
     </Grid>

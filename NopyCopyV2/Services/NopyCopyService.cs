@@ -179,7 +179,9 @@ namespace NopyCopyV2
         {
 #pragma warning disable VSTHRD110 // Observe result of async calls
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
             OnAfterSaveAsync(docCookie);
+
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 #pragma warning restore VSTHRD110 // Observe result of async calls
 
@@ -188,18 +190,17 @@ namespace NopyCopyV2
 
         private async Task OnAfterSaveAsync(uint docCookie)
         {
-            // UNCOMMENT THIS
             // Ignore if disabled or not debugging.
-            //if (!Configuration.IsEnabled || !IsDebugging)
-            //{
-            //    return;
-            //}
+            if (!Configuration.IsEnabled || !IsDebugging)
+            {
+                return;
+            }
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             var document = await FindDocumentAsync(docCookie);
             var project = document.ProjectItem.ContainingProject;
-            var fullPath = new Uri(document.FullName);
+            var fullPath = document.FullName;
 
             if (project == null)
             {
@@ -208,76 +209,98 @@ namespace NopyCopyV2
 
             if (await ShouldCopyAsync(document))
             {
-                var success = false;
-                string reason = null;
-                string copyingTo = null;
+                FileSavedEvent projectItemInfoModel = null;
 
-                do
+                var key = $"document-key-{document.FullName}";
+                if (cacheManager.Exists(key))
                 {
-                    if (!project.Properties.TryGetProperty("LocalPath",
-                        out string localPath))
-                    {
-                        reason = "Failed to locate the local path of the " +
-                            "project.";
-                        break;
-                    }
-
-                    // Find the OutputPath.
-                    if (!project.ConfigurationManager.ActiveConfiguration
-                        .Properties
-                        .TryGetProperty("OutputPath", out string outputPath))
-                    {
-                        reason = "Failed to get the output path of " +
-                            "the project.";
-                        break;
-                    }
-
-                    var localPathUri = new Uri(localPath);
-                    var diff = localPathUri.MakeRelativeUri(fullPath);
-
-                    // Get the path to copy the file to.
-                    copyingTo = Path.Combine(localPath,
-                        outputPath,
-                        Uri.UnescapeDataString(diff.ToString()));
-
-                    // Before copying verify the 'copied' already file exists.
-                    if (!File.Exists(copyingTo))
-                    {
-                        reason = "No file exists at the copy location.";
-                        break;
-                    }
-                } while (false);
-
-                if (success)
-                {
-                    // Copy the file & emit the event.
-                    File.Copy(document.FullName, copyingTo, true);
-                    OnFileSavedEvent(this, new FileSavedEvent
-                    {
-                        SavedFile = new FileInfo(document.FullName),
-                        CopiedTo = new FileInfo(copyingTo)
-                    });
-
-                    await PrintToStatusBarAsync($"Copied file from:'{document.FullName}' to:'{copyingTo}'");
+                    projectItemInfoModel = cacheManager
+                        .Get<FileSavedEvent>(key);
                 }
                 else
                 {
-                    OnFileSavedEvent(this, new FileSavedEvent
+                    string reason = null;
+                    string copyingTo = null;
+
+                    // Do-while loop is only being used so the code can 'break'
+                    // on the first false condition.
+                    do
+                    {
+                        if (!project.Properties.TryGetProperty("URL",
+                            out string projectPath))
+                        {
+                            reason = "Failed to locate the local path of the " +
+                                "project.";
+                            break;
+                        }
+
+                        if (!project.Properties.TryGetProperty("FullPath",
+                            out string projectFolderPath))
+                        {
+                            reason = "Failed to locate the local path of the " +
+                                "project.";
+                            break;
+                        }
+
+                        // Find the OutputPath.
+                        if (!project.ConfigurationManager.ActiveConfiguration
+                            .Properties
+                            .TryGetProperty("OutputPath", out string outputPath))
+                        {
+                            reason = "Failed to get the output path of " +
+                                "the project.";
+                            break;
+                        }
+
+                        var projectPathUri = new Uri(projectPath);
+                        var fullPathUri = new Uri(fullPath);
+                        var diff = projectPathUri.MakeRelativeUri(fullPathUri);
+
+                        // Get the path to copy the file to.
+                        copyingTo = Path.Combine(projectFolderPath,
+                            outputPath,
+                            Uri.UnescapeDataString(diff.ToString()));
+
+                        // Before copying verify the 'copied' already file exists.
+                        if (!File.Exists(copyingTo))
+                        {
+                            reason = "No file exists at the copy location. If " +
+                                "the project is a DotNet Core project, verify " +
+                                "the .csproj file targets element has the " +
+                                "following elements set to false: " +
+                                "AppendTargetFrameworkToOutputPath and" +
+                                "AppendRuntimeIdentifierToOutputPath";
+                            break;
+                        }
+                    } while (false);
+
+                    projectItemInfoModel = new FileSavedEvent
                     {
                         SavedFile = new FileInfo(document.FullName),
-                        CopiedTo = null
-                    });
-                }
-            }
-        }
+                        CopiedTo = new FileInfo(copyingTo),
+                        Reason = reason
+                    };
 
-        private void BuildEvents_OnBuildProjConfigDone(string Project,
-            string ProjectConfig,
-            string Platform,
-            string SolutionConfig,
-            bool Success)
-        {
-            throw new NotImplementedException();
+                    cacheManager.Add(key, projectItemInfoModel);
+                }
+
+                if (!projectItemInfoModel.HasError)
+                {
+                    // Copy the file & emit the event.
+                    File.Copy(projectItemInfoModel.SavedFile.FullName,
+                        projectItemInfoModel.CopiedTo.FullName,
+                        true);
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    PrintToStatusBarAsync($"Copied file from: " +
+                        $"'{projectItemInfoModel.SavedFile?.FullName ?? ""}' " +
+                        $"to:'{projectItemInfoModel.CopiedTo?.FullName ?? ""}'");
+
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                }
+
+                OnFileSavedEvent(this, projectItemInfoModel);
+            }
         }
 
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs)
@@ -603,11 +626,12 @@ namespace NopyCopyV2
                 return false;
             }
 
+            // TODO
             // Check if item was actually copied to the output.
-            if (!ItemExistsInOutputPath(document))
-            {
-                return false;
-            }
+            //if (!ItemExistsInOutputPath(document))
+            //{
+            //    return false;
+            //}
 
             return true;
         }

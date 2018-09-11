@@ -115,6 +115,12 @@ namespace NopyCopyV2.Xaml
 
         #region EventHandlers
 
+        private void TrimLogs(object sender, RoutedEventArgs e)
+        {
+            var validAfter = Logs.Count > 10 ? Logs.Count - 10 : 10;
+            Logs = Logs.Where((l, i) => i > validAfter).ToList();
+        }
+
         private void Button_AddOverride_Click(object sender, RoutedEventArgs e)
         {
             if (nopyCopyService == null)
@@ -258,9 +264,9 @@ namespace NopyCopyV2.Xaml
 
         private void FileSavedEventHandler(object sender, FileSavedEvent e)
         {
-            if (e.CopiedTo == null)
+            if (e.HasError)
             {
-                Logs.Add($"Didn't copy {e.SavedFile}.");
+                Logs.Add($"Didn't copy {e.SavedFile} because {e.Reason}.");
             }
             else
             {
