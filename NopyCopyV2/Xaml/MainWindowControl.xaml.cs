@@ -109,6 +109,11 @@ namespace NopyCopyV2.Xaml
 
         public IVsUIShell5 ColorService { get; set; }
 
+        public bool ShowListedFileExtensions
+        {
+            get => NopyCopyService?.Configuration?.EnableFileExtensions ?? false;
+        }
+
         #endregion
 
         #region Methods

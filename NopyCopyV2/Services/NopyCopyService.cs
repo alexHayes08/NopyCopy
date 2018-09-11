@@ -10,6 +10,7 @@ using NopyCopyV2.Modals.Extensions;
 using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -53,6 +54,7 @@ namespace NopyCopyV2
         private DebuggerEvents _debuggerEvents;
         private BuildEvents _buildEvents;
         private DTE _dte;
+        private NopyCopyConfiguration configuration;
         private IVsSolution2 _solutionService;
         private IVsStatusbar _statusBar;
 
@@ -108,6 +110,7 @@ namespace NopyCopyV2
                     SolutionName = SolutionName,
                     SolutionLoaded = isSolutionLoaded
                 });
+                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsSolutionLoaded)));
             }
         }
 
@@ -121,17 +124,24 @@ namespace NopyCopyV2
                 {
                     IsDebugging = value
                 });
+                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsDebugging)));
             }
         }
 
-        public NopyCopyConfiguration Configuration { get; set; }
+        public NopyCopyConfiguration Configuration
+        {
+            get => configuration;
+            set
+            {
+                configuration = value;
+                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsDebugging)));
+            }
+        }
 
         public string SolutionName
         {
             get
             {
-                //_dte.Solution?.FileName;
-
                 ThreadHelper.ThrowIfNotOnUIThread();
 
                 var name = _solutionService.GetProperty(
@@ -156,6 +166,7 @@ namespace NopyCopyV2
         public event EventHandler<DebugEvent> OnDebugEvent;
         public event EventHandler<SolutionEvent> OnSolutionEvent;
         public event EventHandler<FileSavedEvent> OnFileSavedEvent;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
 

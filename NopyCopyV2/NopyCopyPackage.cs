@@ -37,12 +37,12 @@ namespace NopyCopyV2
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideToolWindow(typeof(MainWindow))]
     //[Guid(GuidList.guidMainWindowPackage)]
-    [Guid(MainWindowPackage.PackageGuidString)]
+    [Guid(NopyCopyPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(MainWindow))]
     [ProvideOptionPage(typeof(OptionsPage),
         OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
-    public sealed class MainWindowPackage : AsyncPackage, IVsShellPropertyEvents
+    public sealed class NopyCopyPackage : AsyncPackage, IVsShellPropertyEvents
     {
         #region Fields
 
@@ -63,7 +63,7 @@ namespace NopyCopyV2
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
         /// </summary>
-        public MainWindowPackage()
+        public NopyCopyPackage()
         { }
 
         #endregion
@@ -130,7 +130,7 @@ namespace NopyCopyV2
             CancellationToken cancellationToken,
             IProgress<ServiceProgressData> progress)
         {
-            await JoinableTaskFactory.SwitchToMainThreadAsync();
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             // Make initial progress report.
             progress.Report(new ServiceProgressData(

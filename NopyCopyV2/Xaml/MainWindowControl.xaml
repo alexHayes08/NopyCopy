@@ -60,6 +60,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0">
@@ -91,13 +93,17 @@
                 <!-- IsChecked="{Binding Path=NopyCopyService.Configuration.IsEnabled}" -->
                 <!--Unchecked="Checkbox_Enable_Unchecked" Checked="Checkbox_Enable_Checked"-->
             </DockPanel>
-            <!--<DockPanel Grid.Row="1" Margin="0,0,0,5" Visibility="Collapsed">
-                        <Label x:Name="Label_ListedFileExtnesionsHeader" Grid.Row="1" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}">Listed File Extensions</Label>
-                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
-                        <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
-                    </DockPanel>-->
-            <Grid Grid.Row="2" x:Name="Grid_AddFileExtensions"
-                          Visibility="Collapsed">
+            <DockPanel Grid.Row="1" Margin="0,0,0,5">
+                <Label x:Name="Label_ListedFileExtnesionsHeader"
+                       Grid.Row="1"
+                       DockPanel.Dock="Top"
+                       Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}">
+                    Listed File Extensions
+                </Label>
+                <!--<RadioButton x:Name="RadioButton_ListedFileExtnesions_IsBlackList" Content="Blacklist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsBlackList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>
+                <RadioButton x:Name="RadioButton_ListedFileExtnesions_IsWhiteList" Content="Whitelist mode" HorizontalAlignment="Left" Margin="0" VerticalAlignment="Top" IsChecked="{Binding Path=NopyCopyService.Configuration.IsWhiteList}" DockPanel.Dock="Top" Foreground="{DynamicResource {x:Static SystemColors.ActiveCaptionTextBrushKey}}"/>-->
+            </DockPanel>
+            <Grid Grid.Row="2" x:Name="Grid_AddFileExtensions" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -160,10 +166,9 @@
             </DockPanel>
             <ListView x:Name="ListView_WatchedFileExtensions"
                               Grid.Row="4"
-                              IsTextSearchEnabled="False"
-                              Visibility="Collapsed"/>
-            <Button x:Name="Button_TrimLogs" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Top" Content="Trim Logs" Margin="4" Click="TrimLogs" />
-            <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False" Grid.Row="4"/>
+                              IsTextSearchEnabled="False"/>
+            <Button x:Name="Button_TrimLogs" Grid.Row="5" HorizontalAlignment="Right" VerticalAlignment="Top" Content="Trim Logs" Margin="4" Click="TrimLogs" />
+            <ListView x:Name="ListView_Log" Margin="0" IsTextSearchEnabled="False" Grid.Row="6"/>
         </Grid>
     </Grid>
 </UserControl>

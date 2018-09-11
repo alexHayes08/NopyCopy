@@ -83,7 +83,7 @@
     <Compile Include="Xaml\MainWindowControl.xaml.cs">
       <DependentUpon>MainWindowControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainWindowPackage.cs" />
+    <Compile Include="NopyCopyPackage.cs" />
     <Compile Include="Modals\DebugEvent.cs" />
     <Compile Include="Modals\EnableToggledEvent.cs" />
     <Compile Include="Modals\FileSavedEvent.cs" />
