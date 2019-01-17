@@ -35,13 +35,18 @@ namespace NopyCopyV2
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [ProvideToolWindow(typeof(MainWindow))]
+    [ProvideToolWindow(toolType: typeof(MainWindow))]
     //[Guid(GuidList.guidMainWindowPackage)]
     [Guid(NopyCopyPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideToolWindow(typeof(MainWindow))]
-    [ProvideOptionPage(typeof(OptionsPage),
-        OptionsPage.CATEGORY_NAME, "General", 0, 0, true)]
+    [ProvideOptionPage(
+        pageType: typeof(OptionsPage),
+        categoryName: OptionsPage.CATEGORY_NAME,
+        pageName: "General",
+        categoryResourceID: 0,
+        pageNameResourceID: 0,
+        supportsAutomation: true)]
     public sealed class NopyCopyPackage : AsyncPackage, IVsShellPropertyEvents
     {
         #region Fields
@@ -54,7 +59,7 @@ namespace NopyCopyV2
         private uint shellPropertyChangedCookie;
         private IVsShell _vsShell = null;
         private MainWindow toolWindow = null;
-        private NopyCopyService nopyCopyService = null;
+        private INopyCopyService nopyCopyService = null;
 
         #endregion
 
@@ -227,7 +232,11 @@ namespace NopyCopyV2
             // Get tool window
             if (toolWindow == null)
             {
-                toolWindow = FindToolWindow(typeof(MainWindow), 0, true) as MainWindow;
+                toolWindow = await FindToolWindowAsync(
+                    toolWindowType: typeof(MainWindow),
+                    id: 0,
+                    create: true,
+                    cancellationToken: cancellationToken) as MainWindow;
             }
 
             // Check if cancelled.

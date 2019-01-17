@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Properties;
+using NopyCopyV2.Services;
 using NopyCopyV2.Xaml;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace NopyCopyV2
         #region Fields
 
         public MainWindowControl mainWindow;
-        public NopyCopyService NopyCopyService;
+        public INopyCopyService NopyCopyService;
 
         #endregion
 
@@ -92,7 +93,7 @@ namespace NopyCopyV2
             mainWindow.UpdateColors();
         }
 
-        public void SetupEvents(NopyCopyService nopyCopyService)
+        public void SetupEvents(INopyCopyService nopyCopyService)
         {
             mainWindow.NopyCopyService = nopyCopyService;
             NopyCopyService = nopyCopyService;

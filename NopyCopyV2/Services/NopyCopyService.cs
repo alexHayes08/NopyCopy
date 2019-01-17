@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using static Microsoft.VisualStudio.VSConstants;
 using static NopyCopyV2.Extensions.IVsSolutionExtensions;
 using static NopyCopyV2.Extensions.NopProjectExtensions;
@@ -76,9 +77,9 @@ namespace NopyCopyV2
 
         public NopyCopyService(IAsyncServiceProvider provider, OptionsPage options)
         {
-            Configuration = new NopyCopyConfiguration(options);
             projectUniqueNameToOutDirMapping = new Dictionary<string, Uri>();
             serviceProvider = provider;
+            Configuration = new NopyCopyConfiguration(options);
         }
 
         #endregion
@@ -104,13 +105,19 @@ namespace NopyCopyV2
             get => isSolutionLoaded;
             private set
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
+
                 isSolutionLoaded = value;
-                OnSolutionEvent?.Invoke(this, new SolutionEvent
-                {
-                    SolutionName = SolutionName,
-                    SolutionLoaded = isSolutionLoaded
-                });
-                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsSolutionLoaded)));
+                OnSolutionEvent?.Invoke(
+                    this,
+                    new SolutionEvent
+                    {
+                        SolutionName = SolutionName,
+                        SolutionLoaded = isSolutionLoaded
+                    });
+                PropertyChanged?.Invoke(
+                    this,
+                    new PropertyChangedEventArgs(nameof(IsSolutionLoaded)));
             }
         }
 
@@ -120,11 +127,15 @@ namespace NopyCopyV2
             private set
             {
                 isDebugging = value;
-                OnDebugEvent?.Invoke(this, new DebugEvent
-                {
-                    IsDebugging = value
-                });
-                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsDebugging)));
+                OnDebugEvent?.Invoke(
+                    this,
+                    new DebugEvent
+                    {
+                        IsDebugging = value
+                    });
+                PropertyChanged?.Invoke(
+                    this,
+                    new PropertyChangedEventArgs(nameof(IsDebugging)));
             }
         }
 
@@ -134,7 +145,9 @@ namespace NopyCopyV2
             set
             {
                 configuration = value;
-                PropertyChanged(this, new PropertyChangedEventArgs(nameof(IsDebugging)));
+                PropertyChanged?.Invoke(
+                    this,
+                    new PropertyChangedEventArgs(nameof(Configuration)));
             }
         }
 
@@ -202,10 +215,10 @@ namespace NopyCopyV2
         private async Task OnAfterSaveAsync(uint docCookie)
         {
             // Ignore if disabled or not debugging.
-            if (!Configuration.IsEnabled || !IsDebugging)
-            {
-                return;
-            }
+            //if (!Configuration.IsEnabled || !IsDebugging)
+            //{
+            //    return;
+            //}
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -263,6 +276,11 @@ namespace NopyCopyV2
                             break;
                         }
 
+                        var propList = new Dictionary<string, string>();
+                        var props = project.ConfigurationManager
+                            .ActiveConfiguration
+                            .Properties;
+
                         var projectPathUri = new Uri(projectPath);
                         var fullPathUri = new Uri(fullPath);
                         var diff = projectPathUri.MakeRelativeUri(fullPathUri);
@@ -302,12 +320,9 @@ namespace NopyCopyV2
                         projectItemInfoModel.CopiedTo.FullName,
                         true);
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    PrintToStatusBarAsync($"Copied file from: " +
+                    await PrintToStatusBarAsync($"Copied file from: " +
                         $"'{projectItemInfoModel.SavedFile?.FullName ?? ""}' " +
                         $"to:'{projectItemInfoModel.CopiedTo?.FullName ?? ""}'");
-
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
 
                 OnFileSavedEvent(this, projectItemInfoModel);
@@ -370,7 +385,9 @@ namespace NopyCopyV2
 
         public int OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
+            Dispatcher.CurrentDispatcher.VerifyAccess();
             IsSolutionLoaded = true;
+
             return S_OK;
         }
 
@@ -391,8 +408,8 @@ namespace NopyCopyV2
 
         public int OnAfterCloseSolution(object pUnkReserved)
         {
+            Dispatcher.CurrentDispatcher.VerifyAccess();
             IsSolutionLoaded = false;
-
             cacheManager.Clear();
 
             return S_OK;
@@ -461,25 +478,13 @@ namespace NopyCopyV2
                 });
 
             // Check if a solution is currently loaded
-            if (_solutionService.IsSolutionLoaded())
-            {
-                // Check it the loaded solution is a nop commerce solution
-                IsSolutionLoaded = true;
-            }
-            else
-            {
-                IsSolutionLoaded = false;
-            }
+            IsSolutionLoaded = _solutionService.IsSolutionLoaded();
 
             // Listen for when debugging starts/ends
             AdviseDebugEvents();
 
             // Listen for when solution events occur
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-#pragma warning disable VSTHRD110 // Observe result of async calls
-            AdviseSolutionEventsAsync();
-#pragma warning restore VSTHRD110 // Observe result of async calls
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            await AdviseSolutionEventsAsync();
 
             AdviseRunningDocumentEvents();
         }
@@ -494,6 +499,7 @@ namespace NopyCopyV2
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
             _statusBar.IsFrozen(out int frozen);
+
             if (frozen != 0)
             {
                 _statusBar.FreezeOutput(0);

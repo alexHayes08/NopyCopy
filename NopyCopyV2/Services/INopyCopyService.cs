@@ -1,16 +1,14 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
+using System;
 using System.ComponentModel;
 
 namespace NopyCopyV2.Services
 {
     /// <summary>
-    ///     I think this is the interface that describes the service interface?
+    /// The service used to copy files that are marked with 'Copy to output
+    /// directory' as 'Copy if newer' or 'Copy always'.
     /// </summary>
-    /// <remarks>
-    ///     According to the docs all VS services need two interfaces, one that 
-    ///     describes the service and one that describes the service interface?
-    /// </remarks>
     /// <see cref="https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-a-service"/>
     public interface INopyCopyService : 
         IVsRunningDocTableEvents3, 
@@ -21,5 +19,8 @@ namespace NopyCopyV2.Services
         bool IsDebugging { get; }
         string SolutionName { get; }
         NopyCopyConfiguration Configuration { get; set; }
+        event EventHandler<DebugEvent> OnDebugEvent;
+        event EventHandler<SolutionEvent> OnSolutionEvent;
+        event EventHandler<FileSavedEvent> OnFileSavedEvent;
     }
 }

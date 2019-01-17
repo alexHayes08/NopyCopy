@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell.Interop;
 using NopyCopyV2.Modals;
 using NopyCopyV2.Modals.Extensions;
+using NopyCopyV2.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +25,8 @@ namespace NopyCopyV2.Xaml
             "(such as views) will be copied to their corresponding ouput " +
             "plugin directory.";
 
-        private NopyCopyService nopyCopyService;
+        private IList<string> logs;
+        private INopyCopyService nopyCopyService;
         private bool attachedHandlers;
         private IDisposable observerRef;
 
@@ -63,11 +65,19 @@ namespace NopyCopyV2.Xaml
 
         #region Properties
 
-        public IList<string> Logs { get; private set; }
+        public IList<string> Logs
+        {
+            get => logs;
+            private set
+            {
+                logs = value;
+                ListView_Log.ItemsSource = logs;
+            }
+        }
 
         public string ErrorMessage { get; set; }
 
-        public NopyCopyService NopyCopyService
+        public INopyCopyService NopyCopyService
         {
             get => nopyCopyService;
             set

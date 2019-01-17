@@ -12,7 +12,7 @@
              Name="NopyCopyToolWindow">
     <UserControl.Resources>
         <Converters:VisibilityConverter x:Key="visibilityConverter"/>
-        <Style TargetType="{x:Type Button}">
+        <!--<Style TargetType="{x:Type Button}">
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.DockTargetButtonBackgroundBeginColorKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.MainWindowButtonActiveGlyphBrushKey}}"/>
         </Style>
@@ -40,7 +40,7 @@
         <Style TargetType="{x:Type ListView}">
             <Setter Property="Background" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>
             <Setter Property="Foreground" Value="{DynamicResource {x:Static vsp:EnvironmentColors.ToolWindowTextBrushKey}}"/>
-        </Style>
+        </Style>-->
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
