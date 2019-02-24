@@ -3,7 +3,6 @@ using EnvDTE;
 using Microsoft;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell.Settings;
 using NopyCopyV2.Extensions;
 using NopyCopyV2.Modals;
 using NopyCopyV2.Modals.Extensions;
@@ -42,6 +41,7 @@ namespace NopyCopyV2
 
         private bool isSolutionLoaded;
         private bool isDebugging;
+        private Guid outputPaneGuid;
 
         /// <summary>
         /// The key is the project name, and the value is the plugins system 
@@ -50,14 +50,14 @@ namespace NopyCopyV2
         private ICacheManager<object> cacheManager;
 
         // Services
-        private RunningDocumentTable _runningDocumentTable;
-        private ShellSettingsManager _shellSettingsManager;
-        private DebuggerEvents _debuggerEvents;
-        private BuildEvents _buildEvents;
-        private DTE _dte;
+        private RunningDocumentTable runningDocumentTable;
+        private DebuggerEvents debuggerEvents;
+        private BuildEvents buildEvents;
+        private DTE dte;
         private NopyCopyConfiguration configuration;
-        private IVsSolution2 _solutionService;
-        private IVsStatusbar _statusBar;
+        private IVsSolution2 solutionService;
+        private IVsStatusbar statusBar;
+        private IVsOutputWindowPane outputPane;
 
         // Cookies
         private uint? debugEventsCookie;
@@ -157,7 +157,7 @@ namespace NopyCopyV2
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
 
-                var name = _solutionService.GetProperty(
+                var name = solutionService.GetProperty(
                     (int)__VSPROPID.VSPROPID_SolutionBaseName,
                     out object pvar);
 
@@ -215,10 +215,8 @@ namespace NopyCopyV2
         private async Task OnAfterSaveAsync(uint docCookie)
         {
             // Ignore if disabled or not debugging.
-            //if (!Configuration.IsEnabled || !IsDebugging)
-            //{
-            //    return;
-            //}
+            if (!Configuration.IsEnabled || !IsDebugging)
+                return;
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -226,10 +224,12 @@ namespace NopyCopyV2
             var project = document.ProjectItem.ContainingProject;
             var fullPath = document.FullName;
 
+            // If there is no project associated with the doc, ignore.
             if (project == null)
-            {
                 return;
-            }
+
+            // TODO: Check if the file is either a 'local' file or the 'copied'
+            // file. Currently only checking if the file is the local version.
 
             if (await ShouldCopyAsync(document))
             {
@@ -276,10 +276,10 @@ namespace NopyCopyV2
                             break;
                         }
 
-                        var propList = new Dictionary<string, string>();
                         var props = project.ConfigurationManager
                             .ActiveConfiguration
-                            .Properties;
+                            .Properties
+                            .CastToDictionary();
 
                         var projectPathUri = new Uri(projectPath);
                         var fullPathUri = new Uri(fullPath);
@@ -320,9 +320,7 @@ namespace NopyCopyV2
                         projectItemInfoModel.CopiedTo.FullName,
                         true);
 
-                    await PrintToStatusBarAsync($"Copied file from: " +
-                        $"'{projectItemInfoModel.SavedFile?.FullName ?? ""}' " +
-                        $"to:'{projectItemInfoModel.CopiedTo?.FullName ?? ""}'");
+                    LogAsync(projectItemInfoModel.ToString());
                 }
 
                 OnFileSavedEvent(this, projectItemInfoModel);
@@ -455,19 +453,33 @@ namespace NopyCopyV2
 
             var runningDocumentTable = new RunningDocumentTable(
                 ServiceProvider.GlobalProvider);
+            Assumes.Present(runningDocumentTable);
+
             var solutionService = ServiceProvider.GlobalProvider
                 .GetService(typeof(IVsSolution)) as IVsSolution2;
-            var shellSettingsService = new ShellSettingsManager(
-                ServiceProvider.GlobalProvider);
+            Assumes.Present(solutionService);
+
             var statusBar = ServiceProvider.GlobalProvider
                 .GetService(typeof(SVsStatusbar)) as IVsStatusbar;
+            Assumes.Present(statusBar);
 
-            _debuggerEvents = dteService.Events.DebuggerEvents;
-            _buildEvents = dteService.Events.BuildEvents;
-            _dte = dteService;
-            _runningDocumentTable = runningDocumentTable;
-            _solutionService = solutionService;
-            _statusBar = statusBar;
+            var outputPaneService = ServiceProvider.GlobalProvider
+                .GetService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+            Assumes.Present(outputPaneService);
+
+            outputPaneGuid = new Guid();
+            outputPane = outputPaneService.CreatePaneHelper(
+                outputPaneGuid,
+                "NopyCopy",
+                true,
+                true);
+
+            debuggerEvents = dteService.Events.DebuggerEvents;
+            buildEvents = dteService.Events.BuildEvents;
+            dte = dteService;
+            this.runningDocumentTable = runningDocumentTable;
+            this.solutionService = solutionService;
+            this.statusBar = statusBar;
             IsDebugging = false;
             IsSolutionLoaded = false;
 
@@ -478,7 +490,7 @@ namespace NopyCopyV2
                 });
 
             // Check if a solution is currently loaded
-            IsSolutionLoaded = _solutionService.IsSolutionLoaded();
+            IsSolutionLoaded = this.solutionService.IsSolutionLoaded();
 
             // Listen for when debugging starts/ends
             AdviseDebugEvents();
@@ -494,18 +506,10 @@ namespace NopyCopyV2
         ///     service call this instead to avoid freeze related errors.
         /// </summary>
         /// <param name="message"></param>
-        private async Task PrintToStatusBarAsync(string message)
+        private void LogAsync(string message)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            _statusBar.IsFrozen(out int frozen);
-
-            if (frozen != 0)
-            {
-                _statusBar.FreezeOutput(0);
-            }
-
-            _statusBar.SetText(message);
+            ThreadHelper.ThrowIfNotOnUIThread();
+            outputPane.OutputStringThreadSafe(message);
         }
 
         private async Task AdviseSolutionEventsAsync()
@@ -514,11 +518,9 @@ namespace NopyCopyV2
 
             // First check that events aren't already registered
             if (solutionEventsCookie.HasValue)
-            {
                 return;
-            }
 
-            if (S_OK != _solutionService.AdviseSolutionEvents(this,
+            if (S_OK != solutionService.AdviseSolutionEvents(this,
                 out uint tempCookie))
             {
                 // Error happened registering to the events
@@ -542,7 +544,7 @@ namespace NopyCopyV2
                 {
                     try
                     {
-                        _solutionService.UnadviseSolutionEvents(solutionEventsCookie.Value);
+                        solutionService.UnadviseSolutionEvents(solutionEventsCookie.Value);
                     }
                     catch (Exception)
                     { }
@@ -559,8 +561,8 @@ namespace NopyCopyV2
                 return;
             }
 
-            _debuggerEvents.OnEnterDesignMode += _debuggerEvents_OnEnterDesignMode;
-            _debuggerEvents.OnEnterRunMode += _debuggerEvents_OnEnterRunMode;
+            debuggerEvents.OnEnterDesignMode += _debuggerEvents_OnEnterDesignMode;
+            debuggerEvents.OnEnterRunMode += _debuggerEvents_OnEnterRunMode;
             debugEventsCookie = 1;
         }
 
@@ -568,8 +570,8 @@ namespace NopyCopyV2
         {
             if (debugEventsCookie.HasValue)
             {
-                _debuggerEvents.OnEnterDesignMode -= _debuggerEvents_OnEnterDesignMode;
-                _debuggerEvents.OnEnterRunMode -= _debuggerEvents_OnEnterRunMode;
+                debuggerEvents.OnEnterDesignMode -= _debuggerEvents_OnEnterDesignMode;
+                debuggerEvents.OnEnterRunMode -= _debuggerEvents_OnEnterRunMode;
                 debugEventsCookie = null;
             }
         }
@@ -582,14 +584,14 @@ namespace NopyCopyV2
                 return;
             }
 
-            runningDocumentTableCookie = _runningDocumentTable.Advise(this);
+            runningDocumentTableCookie = runningDocumentTable.Advise(this);
         }
 
         private void UnadviseDocumentEvents()
         {
             if (runningDocumentTableCookie.HasValue)
             {
-                _runningDocumentTable.Unadvise(runningDocumentTableCookie.Value);
+                runningDocumentTable.Unadvise(runningDocumentTableCookie.Value);
                 runningDocumentTableCookie = null;
             }
         }
@@ -623,32 +625,19 @@ namespace NopyCopyV2
 
                 // Check extension
                 if (string.IsNullOrEmpty(ext))
-                {
                     return false;
-                }
 
                 var containsExtension = Configuration
-                        .GetWatchedFileExensions()
-                        .Contains(ext) && Configuration.IsWhiteList;
+                    .GetWatchedFileExensions()
+                    .Contains(ext) && Configuration.IsWhiteList;
 
                 if (!containsExtension)
-                {
                     return false;
-                }
             }
 
             // Check if 'CopyToOutput' is valid.
             if (!ItemHasCopiedToOutputPropertyAsTrue(document.ProjectItem))
-            {
                 return false;
-            }
-
-            // TODO
-            // Check if item was actually copied to the output.
-            //if (!ItemExistsInOutputPath(document))
-            //{
-            //    return false;
-            //}
 
             return true;
         }
@@ -657,10 +646,10 @@ namespace NopyCopyV2
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            var documentInfo = _runningDocumentTable.GetDocumentInfo(documentCookie);
+            var documentInfo = runningDocumentTable.GetDocumentInfo(documentCookie);
 
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-            return _dte
+            return dte
                 .Documents
                 .Cast<Document>()
                 .FirstOrDefault(doc => doc.FullName == documentInfo.Moniker);

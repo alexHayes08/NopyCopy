@@ -62,6 +62,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Extensions\IVsHierarchyExtensions.cs" />
+    <Compile Include="Extensions\IVsOutputWindowExtensions.cs" />
     <Compile Include="Extensions\IVsSolutionExtensions.cs" />
     <Compile Include="Extensions\NopProjectExtensions.cs" />
     <Compile Include="MainWindow.cs" />

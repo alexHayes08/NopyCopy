@@ -1,7 +1,9 @@
 ﻿using EnvDTE;
+using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NopyCopyV2.Extensions;
 using NopyCopyV2.Properties;
 using NopyCopyV2.Services;
 using System;
@@ -35,11 +37,11 @@ namespace NopyCopyV2
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [ProvideToolWindow(toolType: typeof(MainWindow))]
+    //[ProvideToolWindow(toolType: typeof(MainWindow))]
     //[Guid(GuidList.guidMainWindowPackage)]
     [Guid(NopyCopyPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    [ProvideToolWindow(typeof(MainWindow))]
+    //[ProvideToolWindow(typeof(MainWindow))]
     [ProvideOptionPage(
         pageType: typeof(OptionsPage),
         categoryName: OptionsPage.CATEGORY_NAME,
@@ -57,7 +59,7 @@ namespace NopyCopyV2
         public const string PackageGuidString = "1af9e209-e5f4-4b5c-853f-6c9f46072d29";
 
         private uint shellPropertyChangedCookie;
-        private IVsShell _vsShell = null;
+        private IVsShell vsShell = null;
         private MainWindow toolWindow = null;
         private INopyCopyService nopyCopyService = null;
 
@@ -75,30 +77,44 @@ namespace NopyCopyV2
 
         #region Functions
 
-        private async void ShowToolWindowAsync(object sender, EventArgs e)
-        {
-            await JoinableTaskFactory.SwitchToMainThreadAsync();
+        //private async void ShowToolWindowAsync(object sender, EventArgs e)
+        //{
+        //    await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-            // Get the instance number 0 of this tool window. This window is a single instance so 
-            // this instance is the only one.
-            // The last flag is set to true so that if the tool window doesn't exist it will be created
-            toolWindow = FindToolWindow(typeof(MainWindow), 0, true) as MainWindow;
-            if ((null == toolWindow) || (null == toolWindow.Frame))
-            {
-                throw new NotSupportedException(Resources.ToolWindowInstantiantionError);
-            }
-            IVsWindowFrame windowFrame = (IVsWindowFrame)toolWindow.Frame;
-            ErrorHandler.ThrowOnFailure(windowFrame.Show());
-        }
+        //    // Get the instance number 0 of this tool window. This window is a
+        //    // single instance so this instance is the only one. The last flag
+        //    // is set to true so that if the tool window doesn't exist it will
+        //    // be created.
+        //    toolWindow = await FindToolWindowAsync(
+        //        toolWindowType: typeof(MainWindow),
+        //        id: 0,
+        //        create: true,
+        //        cancellationToken: CancellationToken.None) as MainWindow;
+
+        //    if ((null == toolWindow) || (null == toolWindow.Frame))
+        //    {
+        //        throw new NotSupportedException(Resources.ToolWindowInstantiantionError);
+        //    }
+
+        //    var colorService = ServiceProvider.GlobalProvider
+        //        .GetService(typeof(IVsUIShell5))
+        //        as IVsUIShell5;
+
+        //    toolWindow.ColorService = colorService;
+        //    toolWindow.SetupEvents(nopyCopyService);
+
+        //    IVsWindowFrame windowFrame = (IVsWindowFrame)toolWindow.Frame;
+        //    ErrorHandler.ThrowOnFailure(windowFrame.Show());
+        //}
 
         protected override void Dispose(bool disposing)
         {
             if (ThreadHelper.JoinableTaskContext.IsOnMainThread)
             {
                 // Detach event handlers
-                if (_vsShell != null && shellPropertyChangedCookie != 0)
+                if (vsShell != null && shellPropertyChangedCookie != 0)
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-                    _vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
+                    vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
             }
 
@@ -184,8 +200,11 @@ namespace NopyCopyV2
                 progressText: "Retrieving NopyCopyService",
                 currentStep: 3,
                 totalSteps: 10));
+
             nopyCopyService = await GetServiceAsync(typeof(SNopyCopyService))
                 as NopyCopyService;
+
+            Assumes.Present(nopyCopyService);
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
@@ -199,24 +218,27 @@ namespace NopyCopyV2
                 totalSteps: 10));
 
             // Get IVsShell service.
-            _vsShell = ServiceProvider.GlobalProvider
-                .GetService(typeof(SVsShell)) as IVsShell;
+            vsShell = ServiceProvider.GlobalProvider
+                .GetService(typeof(SVsShell))
+                as IVsShell;
+
+            Assumes.Present(vsShell);
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            if (_vsShell != null)
+            if (vsShell != null)
             {
                 // Initialize visual effect values so themes can determine if 
                 // various effects are supported by the environment
                 object effectsAllowed;
-                if (ErrorHandler.Succeeded(_vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_VisualEffectsAllowed, out effectsAllowed)))
+                if (ErrorHandler.Succeeded(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_VisualEffectsAllowed, out effectsAllowed)))
                 {
                     Debug.Assert(effectsAllowed is int, "VSSPROPID_VisualEffectsAllowed should be of type int");
                 }
 
-                if (S_OK != _vsShell.AdviseShellPropertyChanges(this, out shellPropertyChangedCookie))
+                if (S_OK != vsShell.AdviseShellPropertyChanges(this, out shellPropertyChangedCookie))
                 {
                     // Error occurred while trying to listen to shell events
                 }
@@ -225,19 +247,26 @@ namespace NopyCopyV2
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Retrieving services",
-                progressText: "Retrieving ToolWindow",
+                progressText: "Retrieving output window",
                 currentStep: 5,
                 totalSteps: 10));
 
+            // Make progress report.
+            //progress.Report(new ServiceProgressData(
+            //    waitMessage: "Retrieving services",
+            //    progressText: "Retrieving ToolWindow",
+            //    currentStep: 5,
+            //    totalSteps: 10));
+
             // Get tool window
-            if (toolWindow == null)
-            {
-                toolWindow = await FindToolWindowAsync(
-                    toolWindowType: typeof(MainWindow),
-                    id: 0,
-                    create: true,
-                    cancellationToken: cancellationToken) as MainWindow;
-            }
+            //if (toolWindow == null)
+            //{
+            //    toolWindow = await FindToolWindowAsync(
+            //        toolWindowType: typeof(MainWindow),
+            //        id: 0,
+            //        create: true,
+            //        cancellationToken: cancellationToken) as MainWindow;
+            //}
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
@@ -249,21 +278,6 @@ namespace NopyCopyV2
                 progressText: "Retrieving IVsUIShell5",
                 currentStep: 6,
                 totalSteps: 10));
-            var colorService = ServiceProvider.GlobalProvider.GetService(typeof(IVsUIShell5))
-                as IVsUIShell5;
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving DTE",
-                currentStep: 7,
-                totalSteps: 10));
-            var dteService = ServiceProvider.GlobalProvider.GetService(typeof(DTE))
-                as DTE;
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
@@ -281,20 +295,8 @@ namespace NopyCopyV2
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving DTE",
-                currentStep: 9,
-                totalSteps: 10));
-            var solutionService = ServiceProvider.GlobalProvider.GetService(typeof(IVsSolution)) as IVsSolution2;
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            toolWindow.ColorService = colorService;
-            toolWindow.SetupEvents(nopyCopyService);
+            //toolWindow.ColorService = colorService;
+            //toolWindow.SetupEvents(nopyCopyService);
 
             // Make progress report.
             progress.Report(new ServiceProgressData(

@@ -10,8 +10,8 @@ namespace NopyCopyV2.Services
     /// directory' as 'Copy if newer' or 'Copy always'.
     /// </summary>
     /// <see cref="https://docs.microsoft.com/en-us/visualstudio/extensibility/how-to-provide-a-service"/>
-    public interface INopyCopyService : 
-        IVsRunningDocTableEvents3, 
+    public interface INopyCopyService :
+        IVsRunningDocTableEvents3,
         IVsSolutionEvents,
         INotifyPropertyChanged
     {
