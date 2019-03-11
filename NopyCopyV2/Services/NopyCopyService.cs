@@ -320,7 +320,7 @@ namespace NopyCopyV2
                         projectItemInfoModel.CopiedTo.FullName,
                         true);
 
-                    LogAsync(projectItemInfoModel.ToString());
+                    Log(projectItemInfoModel.ToString());
                 }
 
                 OnFileSavedEvent(this, projectItemInfoModel);
@@ -506,10 +506,16 @@ namespace NopyCopyV2
         ///     service call this instead to avoid freeze related errors.
         /// </summary>
         /// <param name="message"></param>
-        private void LogAsync(string message)
+        private void Log(string message)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
-            outputPane.OutputStringThreadSafe(message);
+
+            var formattedMsg = String.Format("[{0}] - {1}{2}",
+                DateTime.Now.ToString("hh:mm:ss tt"),
+                message,
+                Environment.NewLine);
+
+            outputPane.OutputStringThreadSafe(formattedMsg);
         }
 
         private async Task AdviseSolutionEventsAsync()
