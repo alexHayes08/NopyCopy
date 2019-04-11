@@ -276,11 +276,6 @@ namespace NopyCopyV2
                             break;
                         }
 
-                        var props = project.ConfigurationManager
-                            .ActiveConfiguration
-                            .Properties
-                            .CastToDictionary();
-
                         var projectPathUri = new Uri(projectPath);
                         var fullPathUri = new Uri(fullPath);
                         var diff = projectPathUri.MakeRelativeUri(fullPathUri);
