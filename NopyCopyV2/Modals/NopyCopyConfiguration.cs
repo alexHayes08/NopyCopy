@@ -115,22 +115,6 @@ namespace NopyCopyV2.Modals
             }
         }
 
-        /// <summary>
-        /// Used to disable or enable the plugin.
-        /// </summary>
-        public bool IsEnabled
-        {
-            get => optionsPage.IsEnabled;
-            set
-            {
-                if (optionsPage.IsEnabled != value)
-                {
-                    optionsPage.IsEnabled = value;
-                    OnChange();
-                }
-            }
-        }
-
         #endregion
 
         #region Methods

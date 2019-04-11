@@ -215,7 +215,7 @@ namespace NopyCopyV2
         private async Task OnAfterSaveAsync(uint docCookie)
         {
             // Ignore if disabled or not debugging.
-            if (!Configuration.IsEnabled || !IsDebugging)
+            if (!IsDebugging)
                 return;
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -319,10 +319,9 @@ namespace NopyCopyV2
                     File.Copy(projectItemInfoModel.SavedFile.FullName,
                         projectItemInfoModel.CopiedTo.FullName,
                         true);
-
-                    Log(projectItemInfoModel.ToString());
                 }
 
+                Log(projectItemInfoModel.ToString());
                 OnFileSavedEvent(this, projectItemInfoModel);
             }
         }

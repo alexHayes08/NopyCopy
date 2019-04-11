@@ -1,19 +1,13 @@
-﻿using EnvDTE;
-using Microsoft;
-using Microsoft.VisualStudio;
+﻿using Microsoft;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using NopyCopyV2.Extensions;
-using NopyCopyV2.Properties;
 using NopyCopyV2.Services;
 using System;
 using System.ComponentModel.Design;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using static Microsoft.VisualStudio.VSConstants;
 
 namespace NopyCopyV2
 {
@@ -36,12 +30,8 @@ namespace NopyCopyV2
     [ProvideService(serviceType: typeof(SNopyCopyService), IsAsyncQueryable = true)]
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
-    [ProvideMenuResource("Menus.ctmenu", 1)]
-    //[ProvideToolWindow(toolType: typeof(MainWindow))]
-    //[Guid(GuidList.guidMainWindowPackage)]
     [Guid(NopyCopyPackage.PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
-    //[ProvideToolWindow(typeof(MainWindow))]
     [ProvideOptionPage(
         pageType: typeof(OptionsPage),
         categoryName: OptionsPage.CATEGORY_NAME,
@@ -49,7 +39,7 @@ namespace NopyCopyV2
         categoryResourceID: 0,
         pageNameResourceID: 0,
         supportsAutomation: true)]
-    public sealed class NopyCopyPackage : AsyncPackage, IVsShellPropertyEvents
+    public sealed class NopyCopyPackage : AsyncPackage
     {
         #region Fields
 
@@ -58,9 +48,6 @@ namespace NopyCopyV2
         /// </summary>
         public const string PackageGuidString = "1af9e209-e5f4-4b5c-853f-6c9f46072d29";
 
-        private uint shellPropertyChangedCookie;
-        private IVsShell vsShell = null;
-        private MainWindow toolWindow = null;
         private INopyCopyService nopyCopyService = null;
 
         #endregion
@@ -75,51 +62,7 @@ namespace NopyCopyV2
 
         #endregion
 
-        #region Functions
-
-        //private async void ShowToolWindowAsync(object sender, EventArgs e)
-        //{
-        //    await JoinableTaskFactory.SwitchToMainThreadAsync();
-
-        //    // Get the instance number 0 of this tool window. This window is a
-        //    // single instance so this instance is the only one. The last flag
-        //    // is set to true so that if the tool window doesn't exist it will
-        //    // be created.
-        //    toolWindow = await FindToolWindowAsync(
-        //        toolWindowType: typeof(MainWindow),
-        //        id: 0,
-        //        create: true,
-        //        cancellationToken: CancellationToken.None) as MainWindow;
-
-        //    if ((null == toolWindow) || (null == toolWindow.Frame))
-        //    {
-        //        throw new NotSupportedException(Resources.ToolWindowInstantiantionError);
-        //    }
-
-        //    var colorService = ServiceProvider.GlobalProvider
-        //        .GetService(typeof(IVsUIShell5))
-        //        as IVsUIShell5;
-
-        //    toolWindow.ColorService = colorService;
-        //    toolWindow.SetupEvents(nopyCopyService);
-
-        //    IVsWindowFrame windowFrame = (IVsWindowFrame)toolWindow.Frame;
-        //    ErrorHandler.ThrowOnFailure(windowFrame.Show());
-        //}
-
-        protected override void Dispose(bool disposing)
-        {
-            if (ThreadHelper.JoinableTaskContext.IsOnMainThread)
-            {
-                // Detach event handlers
-                if (vsShell != null && shellPropertyChangedCookie != 0)
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-                    vsShell.UnadviseShellPropertyChanges(shellPropertyChangedCookie);
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-            }
-
-            base.Dispose(disposing);
-        }
+        #region Methods
 
         #region Package Members
 
@@ -157,24 +100,11 @@ namespace NopyCopyV2
             progress.Report(new ServiceProgressData(
                 waitMessage: "Initializing",
                 progressText: "Initializing",
-                currentStep: 0,
-                totalSteps: 10));
+                currentStep: 1,
+                totalSteps: 4));
             var serviceContainer = this as IServiceContainer;
 
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Calling base.InitializeAsync",
-                progressText: "Initializing",
-                currentStep: 1,
-                totalSteps: 10));
             await base.InitializeAsync(cancellationToken, progress);
-            MainWindowCommand.Initialize(this);
 
             // Check if cancelled.
             if (cancellationToken.IsCancellationRequested)
@@ -185,9 +115,7 @@ namespace NopyCopyV2
                 waitMessage: "Registering services",
                 progressText: "Initializing",
                 currentStep: 2,
-                totalSteps: 10));
-            //ServiceCreatorCallback nopyCopyCallback =
-            //    new ServiceCreatorCallback(CreateServiceNopyCopyService);
+                totalSteps: 4));
             AddService(typeof(SNopyCopyService), CreateServiceNopyCopyServiceAsync);
 
             // Check if cancelled.
@@ -199,120 +127,25 @@ namespace NopyCopyV2
                 waitMessage: "Retrieving services",
                 progressText: "Retrieving NopyCopyService",
                 currentStep: 3,
-                totalSteps: 10));
+                totalSteps: 4));
 
             nopyCopyService = await GetServiceAsync(typeof(SNopyCopyService))
                 as NopyCopyService;
-
             Assumes.Present(nopyCopyService);
 
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving IVsShell",
-                currentStep: 4,
-                totalSteps: 10));
-
-            // Get IVsShell service.
-            vsShell = ServiceProvider.GlobalProvider
-                .GetService(typeof(SVsShell))
-                as IVsShell;
-
-            Assumes.Present(vsShell);
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            if (vsShell != null)
-            {
-                // Initialize visual effect values so themes can determine if 
-                // various effects are supported by the environment
-                object effectsAllowed;
-                if (ErrorHandler.Succeeded(vsShell.GetProperty((int)__VSSPROPID4.VSSPROPID_VisualEffectsAllowed, out effectsAllowed)))
-                {
-                    Debug.Assert(effectsAllowed is int, "VSSPROPID_VisualEffectsAllowed should be of type int");
-                }
-
-                if (S_OK != vsShell.AdviseShellPropertyChanges(this, out shellPropertyChangedCookie))
-                {
-                    // Error occurred while trying to listen to shell events
-                }
-            }
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving output window",
-                currentStep: 5,
-                totalSteps: 10));
-
-            // Make progress report.
-            //progress.Report(new ServiceProgressData(
-            //    waitMessage: "Retrieving services",
-            //    progressText: "Retrieving ToolWindow",
-            //    currentStep: 5,
-            //    totalSteps: 10));
-
-            // Get tool window
-            //if (toolWindow == null)
-            //{
-            //    toolWindow = await FindToolWindowAsync(
-            //        toolWindowType: typeof(MainWindow),
-            //        id: 0,
-            //        create: true,
-            //        cancellationToken: cancellationToken) as MainWindow;
-            //}
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving IVsUIShell5",
-                currentStep: 6,
-                totalSteps: 10));
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            // Make progress report.
-            progress.Report(new ServiceProgressData(
-                waitMessage: "Retrieving services",
-                progressText: "Retrieving DTE",
-                currentStep: 8,
-                totalSteps: 10));
             var runningDocumentTable = new RunningDocumentTable(this);
-
-            // Check if cancelled.
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
-            //toolWindow.ColorService = colorService;
-            //toolWindow.SetupEvents(nopyCopyService);
 
             // Make progress report.
             progress.Report(new ServiceProgressData(
                 waitMessage: "Finished",
                 progressText: "Completed",
-                currentStep: 10,
-                totalSteps: 10));
+                currentStep: 4,
+                totalSteps: 4));
+
             return;
         }
 
         #endregion
-
-        public int OnShellPropertyChange(int propid, object var)
-        {
-            return S_OK;
-        }
 
         #endregion
     }

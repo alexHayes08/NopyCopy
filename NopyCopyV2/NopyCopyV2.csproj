@@ -65,12 +65,9 @@
     <Compile Include="Extensions\IVsOutputWindowExtensions.cs" />
     <Compile Include="Extensions\IVsSolutionExtensions.cs" />
     <Compile Include="Extensions\NopProjectExtensions.cs" />
-    <Compile Include="MainWindow.cs" />
-    <Compile Include="MainWindowCommand.cs" />
     <Compile Include="Modals\INopyCopyConfiguration.cs" />
     <Compile Include="Modals\INopyCopyStatus.cs" />
     <Compile Include="Modals\NopyCopyStatus.cs" />
-    <Compile Include="Modals\Override.cs" />
     <Compile Include="Modals\Unsubscriber.cs" />
     <Compile Include="OptionsPage.cs">
       <SubType>Component</SubType>
@@ -80,27 +77,18 @@
     <Compile Include="Services\SNopyCopyService.cs" />
     <Compile Include="Services\SVSDKHelperService.cs" />
     <Compile Include="Services\VSDKHelperService.cs" />
-    <Compile Include="Converters\VisibilityConverter.cs" />
-    <Compile Include="Xaml\MainWindowControl.xaml.cs">
-      <DependentUpon>MainWindowControl.xaml</DependentUpon>
-    </Compile>
     <Compile Include="NopyCopyPackage.cs" />
     <Compile Include="Modals\DebugEvent.cs" />
-    <Compile Include="Modals\EnableToggledEvent.cs" />
     <Compile Include="Modals\FileSavedEvent.cs" />
     <Compile Include="Modals\SolutionEvent.cs" />
     <Compile Include="Modals\NopyCopyConfiguration.cs" />
     <Compile Include="Services\NopyCopyService.cs" />
-    <Compile Include="PgkCmdId.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Guids.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Xaml\OptionsControl.xaml.cs">
-      <DependentUpon>OptionsControl.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -113,30 +101,24 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\MainWindowCommand.png" />
-    <Content Include="Resources\ApertureLabsLogoOnly.ico" />
-    <Content Include="index.html" />
+    <Content Include="Resources\ApertureLabsLogoOnly.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <VSCTCompile Include="MainWindowPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
     <Content Include="Resources\ApertureLabsLogo.png" />
     <Content Include="Resources\Aperture_Science.png" />
-    <Content Include="Resources\aperture_test_manager.ico" />
+    <Content Include="Resources\aperture_test_manager.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\FavIcon.png" />
     <Content Include="Resources\OldMainWindowCommand.png" />
     <Content Include="Resources\MainWindowPackage.ico" />
     <Content Include="Resources\NopyCopyToolWindowCommand.png" />
-    <Content Include="stylesheet.css" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Xaml\MainWindowControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Xaml\OptionsControl.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="CacheManager.Core, Version=1.1.2.0, Culture=neutral, PublicKeyToken=5b450b4fb65c4cdb, processorArchitecture=MSIL">

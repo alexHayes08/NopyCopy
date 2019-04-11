@@ -15,7 +15,6 @@ namespace NopyCopyV2
         // These values are used due to the way vs works and something about
         // auto-gen stuff.
         // https://github.com/Microsoft/VSSDK-Extensibility-Samples/tree/master/Options
-        private bool isEnabled;
         private bool enableFileExtensions;
         private bool isWhiteList;
         private string watchedFileExtensions;
@@ -25,22 +24,11 @@ namespace NopyCopyV2
         #region Ctor(s)
 
         public OptionsPage()
-        {
-            //ListedFileExtensions = new List<string>();
-        }
+        { }
 
         #endregion
 
         #region Properties
-
-        [Category(CATEGORY_NAME)]
-        [DisplayName("Enabled")]
-        [Description("Toggles whether this extension on/off.")]
-        public bool IsEnabled
-        {
-            get => isEnabled;
-            set => isEnabled = value;
-        }
 
         [Category(CATEGORY_NAME)]
         [DisplayName("Enable file extensions")]

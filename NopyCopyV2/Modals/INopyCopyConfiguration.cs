@@ -6,7 +6,6 @@ namespace NopyCopyV2.Modals
 {
     public interface INopyCopyConfiguration
     {
-        bool IsEnabled { get; }
         bool EnableFileExtensions { get; }
         bool IsWhiteList { get; }
         string WatchedFileExtensions { get; }
